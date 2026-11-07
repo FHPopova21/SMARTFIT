@@ -9,9 +9,19 @@ interface ClothingCardProps {
   item: ClothingItem;
   onRecommend?: () => void;
   showRecommendButton?: boolean;
+  showSellerActions?: boolean;
+  onDelete?: () => void;
+  onEdit?: () => void;
 }
 
-const ClothingCard = ({ item, onRecommend, showRecommendButton = true }: ClothingCardProps) => {
+const ClothingCard = ({ 
+  item, 
+  onRecommend, 
+  showRecommendButton = true,
+  showSellerActions = false,
+  onDelete,
+  onEdit 
+}: ClothingCardProps) => {
   const getClothingTypeLabel = (type: string) => {
     const labels = {
       shirt: 'Риза',
@@ -88,15 +98,30 @@ const ClothingCard = ({ item, onRecommend, showRecommendButton = true }: Clothin
           )}
         </div>
 
-        {showRecommendButton && (
-          <Button 
-            onClick={onRecommend}
-            className="w-full bg-beige-600 hover:bg-beige-700 text-white"
-            size="sm"
-          >
-            <ShoppingBag size={16} className="mr-2" />
-            AI Препоръка за размер
-          </Button>
+        {showSellerActions ? (
+          <div className="flex space-x-2 pt-2">
+            {onDelete && (
+              <Button 
+                onClick={onDelete}
+                variant="destructive"
+                className="w-full text-xs"
+                size="sm"
+              >
+                Изтрий обявата
+              </Button>
+            )}
+          </div>
+        ) : (
+          showRecommendButton && (
+            <Button 
+              onClick={onRecommend}
+              className="w-full bg-beige-600 hover:bg-beige-700 text-white"
+              size="sm"
+            >
+              <ShoppingBag size={16} className="mr-2" />
+              AI Препоръка за размер
+            </Button>
+          )
         )}
       </CardContent>
     </Card>

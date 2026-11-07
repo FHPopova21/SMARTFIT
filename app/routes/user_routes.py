@@ -94,14 +94,22 @@ def save_measurements():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+@user_bp.route('/change-password', methods=['POST'])
 @user_bp.route('/user/change-password', methods=['POST'])
 @login_required
 def change_password():
+    """
+    Смяна на паролата на текущо влезлия потребител.
+    """
     try:
         data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+
         old_password = data.get('old_password')
         new_password = data.get('new_password')
         confirm_new_password = data.get('confirm_new_password')
+
         if not old_password or not new_password or not confirm_new_password:
             return jsonify({'error': 'Всички полета са задължителни.'}), 400
         if not current_user.check_password(old_password):
@@ -110,10 +118,14 @@ def change_password():
             return jsonify({'error': 'Новите пароли не съвпадат.'}), 400
         if len(new_password) < 6:
             return jsonify({'error': 'Новата парола трябва да е поне 6 символа.'}), 400
+
         current_user.set_password(new_password)
         db.session.commit()
+        log_user_action("change_password", current_user.id)
         return jsonify({'message': 'Паролата е сменена успешно.'}), 200
+
     except Exception as e:
         log_error(e, 'Change password error')
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500 
+        return jsonify({'error': str(e)}), 500
+ 

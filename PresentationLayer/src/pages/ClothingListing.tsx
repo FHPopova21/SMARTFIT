@@ -17,6 +17,7 @@ const ClothingListing = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState<string>('all');
   const [selectedSize, setSelectedSize] = useState<string>('all');
+  const [allItems, setAllItems] = useState<ClothingItem[]>(mockClothingItems);
   const [filteredItems, setFilteredItems] = useState<ClothingItem[]>(mockClothingItems);
   const navigate = useNavigate();
   const [selectedItem, setSelectedItem] = useState<ClothingItem | null>(null);
@@ -27,8 +28,26 @@ const ClothingListing = () => {
   const { toast } = useToast();
   const [hasRecommendation, setHasRecommendation] = useState(false);
 
+  useEffect(() => {
+    const fetchClothes = async () => {
+      try {
+        const res = await fetch('/api/clothes');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setAllItems(data);
+            setFilteredItems(data);
+          }
+        }
+      } catch (err) {
+        console.warn('API clothes fetch failed, using fallback mock data:', err);
+      }
+    };
+    fetchClothes();
+  }, []);
+
   const filterItems = () => {
-    let filtered = mockClothingItems;
+    let filtered = allItems;
 
     if (searchTerm) {
       filtered = filtered.filter(item =>
@@ -50,7 +69,7 @@ const ClothingListing = () => {
 
   useEffect(() => {
     filterItems();
-  }, [searchTerm, selectedType, selectedSize]);
+  }, [searchTerm, selectedType, selectedSize, allItems]);
 
   const handleRecommendation = (item: ClothingItem) => {
     // Navigate to recommendation page with item data

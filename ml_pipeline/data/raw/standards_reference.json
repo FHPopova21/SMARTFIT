@@ -1,0 +1,37 @@
+{
+  "source": "ISO 8559-1:2017 & EN 13402 Size Designation of Clothes / ANSUR II Anthropometric Survey",
+  "measurement_units": "centimeters (cm)",
+  "chest_ranges": {
+    "female": {
+      "XS": [76, 82],
+      "S": [83, 89],
+      "M": [90, 97],
+      "L": [98, 106],
+      "XL": [107, 120]
+    },
+    "male": {
+      "XS": [82, 88],
+      "S": [89, 95],
+      "M": [96, 103],
+      "L": [104, 112],
+      "XL": [113, 126]
+    }
+  },
+  "waist_ranges": {
+    "female": {
+      "XS": [58, 64],
+      "S": [65, 71],
+      "M": [72, 80],
+      "L": [81, 90],
+      "XL": [91, 105]
+    },
+    "male": {
+      "XS": [68, 74],
+      "S": [75, 82],
+      "M": [83, 91],
+      "L": [92, 101],
+      "XL": [102, 116]
+    }
+  }
+}
+

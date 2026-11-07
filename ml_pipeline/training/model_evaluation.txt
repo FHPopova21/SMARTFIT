@@ -1,0 +1,47 @@
+==================================================
+      SMARTFIT ML MODEL EVALUATION REPORT        
+==================================================
+
+Избран алгоритъм: Random Forest (Calibrated)
+Крайна точност (Train Accuracy): 0.9273
+Крайна точност (Test Accuracy):  0.8208
+Среден Brier Score:              0.0564
+
+Сравнителни резултати от бенчмарка:
+ - Logistic Regression (Baseline): Train=0.720, Test=0.709
+ - Random Forest                 : Train=0.983, Test=0.824
+ - HistGradientBoosting          : Train=1.000, Test=0.822
+
+Подробен Classification Report:
+              precision    recall  f1-score   support
+
+           L      0.796     0.773     0.785       278
+           M      0.831     0.888     0.859       411
+           S      0.811     0.840     0.825       281
+          XL      0.864     0.745     0.800       137
+          XS      0.817     0.720     0.766        93
+
+    accuracy                          0.821      1200
+   macro avg      0.824     0.793     0.807      1200
+weighted avg      0.821     0.821     0.820      1200
+
+
+Матрица на объркване (Confusion Matrix):
+Класове: ['L', 'M', 'S', 'XL', 'XS']
+[[215  43   4  16   0]
+ [ 21 365  25   0   0]
+ [  0  30 236   0  15]
+ [ 34   1   0 102   0]
+ [  0   0  26   0  67]]
+
+Важност на признаците (Feature Importance):
+      feature  importance
+        chest    0.309277
+        waist    0.198804
+       weight    0.153739
+garment_width    0.133318
+       height    0.070217
+       gender    0.068897
+ garment_type    0.028178
+     material    0.023817
+    body_type    0.013752

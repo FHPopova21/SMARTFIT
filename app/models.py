@@ -1,11 +1,11 @@
 from flask_sqlalchemy import SQLAlchemy
-from flask_wtf import FlaskForm
-from wtforms import SelectField, FloatField, IntegerField, SubmitField, StringField
-from wtforms.validators import DataRequired
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from . import db
-from datetime import datetime
+from datetime import datetime, timezone
+
+def get_utc_now():
+    return datetime.now(timezone.utc)
 
 class BodyMeasurements(db.Model):
     """
@@ -20,8 +20,15 @@ class BodyMeasurements(db.Model):
     waist = db.Column(db.Float, nullable=False)  # in cm
     body_type = db.Column(db.String(20), nullable=False)  # 'slim', 'medium', or 'large'
     age = db.Column(db.Integer)  # optional
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_utc_now)
+    updated_at = db.Column(db.DateTime, default=get_utc_now, onupdate=get_utc_now)
+
+    def __init__(self, user_id=None, height=None, weight=None, gender=None, chest=None, waist=None, body_type=None, age=None, **kwargs):
+        kwargs.update({k: v for k, v in {
+            'user_id': user_id, 'height': height, 'weight': weight, 'gender': gender,
+            'chest': chest, 'waist': waist, 'body_type': body_type, 'age': age
+        }.items() if v is not None})
+        super().__init__(**kwargs)
 
     def to_dict(self):
         """
@@ -50,6 +57,12 @@ class User(UserMixin, db.Model):
     body_measurements = db.relationship('BodyMeasurements', backref='user', uselist=False, lazy=True)
     clothes = db.relationship('Clothing', backref='seller', lazy=True)
     comments = db.relationship('Comment', backref='user', lazy=True)
+
+    def __init__(self, username=None, email=None, role='user', password_hash=None, **kwargs):
+        kwargs.update({k: v for k, v in {
+            'username': username, 'email': email, 'role': role, 'password_hash': password_hash
+        }.items() if v is not None})
+        super().__init__(**kwargs)
     
     def set_password(self, password):
         """
@@ -92,9 +105,17 @@ class Clothing(db.Model):
     description = db.Column(db.Text)  # optional
     image_url = db.Column(db.String(500))  # optional
     seller_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_utc_now)
+    updated_at = db.Column(db.DateTime, default=get_utc_now, onupdate=get_utc_now)
     comments = db.relationship('Comment', backref='clothing', lazy=True)
+
+    def __init__(self, name=None, type=None, material=None, size=None, width=None, length=None, sleeves=None, price=None, description=None, image_url=None, seller_id=None, **kwargs):
+        kwargs.update({k: v for k, v in {
+            'name': name, 'type': type, 'material': material, 'size': size,
+            'width': width, 'length': length, 'sleeves': sleeves, 'price': price,
+            'description': description, 'image_url': image_url, 'seller_id': seller_id
+        }.items() if v is not None})
+        super().__init__(**kwargs)
 
     def to_dict(self):
         """
@@ -114,8 +135,11 @@ class Clothing(db.Model):
             'price': self.price,
             'description': self.description,
             'image_url': self.image_url,
+            'image': self.image_url,
             'seller_id': self.seller_id,
             'seller_name': self.seller.username if self.seller else None,
+            'merchantId': str(self.seller_id),
+            'merchantName': self.seller.username if self.seller else 'SmartFit Store',
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }
@@ -129,8 +153,14 @@ class Comment(db.Model):
     rating = db.Column(db.Integer)  # 1-5 stars, optional
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     clothing_id = db.Column(db.Integer, db.ForeignKey('clothing.id'), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_utc_now)
+    updated_at = db.Column(db.DateTime, default=get_utc_now, onupdate=get_utc_now)
+
+    def __init__(self, content=None, rating=None, user_id=None, clothing_id=None, **kwargs):
+        kwargs.update({k: v for k, v in {
+            'content': content, 'rating': rating, 'user_id': user_id, 'clothing_id': clothing_id
+        }.items() if v is not None})
+        super().__init__(**kwargs)
 
     def to_dict(self):
         """
@@ -154,7 +184,7 @@ class RecommendationHistory(db.Model):
     """
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    date = db.Column(db.DateTime, nullable=False, default=get_utc_now)
     clothing_type = db.Column(db.String(50), nullable=False)
     recommended_size = db.Column(db.String(10), nullable=False)
     height = db.Column(db.String(10))
@@ -163,6 +193,14 @@ class RecommendationHistory(db.Model):
     waist = db.Column(db.String(10))
     body_type = db.Column(db.String(20))
     item_identifier = db.Column(db.String(100))  # To group related recommendations
+
+    def __init__(self, user_id=None, clothing_type=None, recommended_size=None, height=None, weight=None, chest=None, waist=None, body_type=None, item_identifier=None, date=None, **kwargs):
+        kwargs.update({k: v for k, v in {
+            'user_id': user_id, 'clothing_type': clothing_type, 'recommended_size': recommended_size,
+            'height': height, 'weight': weight, 'chest': chest, 'waist': waist,
+            'body_type': body_type, 'item_identifier': item_identifier, 'date': date
+        }.items() if v is not None})
+        super().__init__(**kwargs)
     
     def to_dict(self):
         """

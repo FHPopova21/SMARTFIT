@@ -314,7 +314,7 @@ const ChangePasswordForm = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch('/api/change-password', {
+      const res = await fetch('/api/user/change-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -334,7 +334,7 @@ const ChangePasswordForm = () => {
         toast({ title: 'Грешка', description: data.error || 'Възникна грешка', variant: 'destructive' });
       }
     } catch (error) {
-      toast({ title: 'Грешка', description: 'Възникна грешка', variant: 'destructive' });
+      toast({ title: 'Грешка', description: 'Възникна грешка при връзка със сървъра', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -343,9 +343,8 @@ const ChangePasswordForm = () => {
   return (
     <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
       <div>
-        <Label htmlFor="old-password">Стара парола</Label>
+        <label className="text-sm font-medium text-gray-700">Стара парола</label>
         <Input
-          id="old-password"
           type="password"
           value={oldPassword}
           onChange={e => setOldPassword(e.target.value)}
@@ -353,9 +352,8 @@ const ChangePasswordForm = () => {
         />
       </div>
       <div>
-        <Label htmlFor="new-password">Нова парола</Label>
+        <label className="text-sm font-medium text-gray-700">Нова парола</label>
         <Input
-          id="new-password"
           type="password"
           value={newPassword}
           onChange={e => setNewPassword(e.target.value)}
@@ -363,16 +361,15 @@ const ChangePasswordForm = () => {
         />
       </div>
       <div>
-        <Label htmlFor="confirm-new-password">Потвърди нова парола</Label>
+        <label className="text-sm font-medium text-gray-700">Потвърди нова парола</label>
         <Input
-          id="confirm-new-password"
           type="password"
           value={confirmNewPassword}
           onChange={e => setConfirmNewPassword(e.target.value)}
           required
         />
       </div>
-      <Button type="submit" className="w-full" disabled={loading}>
+      <Button type="submit" className="w-full bg-beige-600 hover:bg-beige-700 text-white" disabled={loading}>
         {loading ? 'Смяна...' : 'Смени паролата'}
       </Button>
     </form>

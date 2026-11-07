@@ -1,0 +1,14 @@
+services:
+  backend:
+    build: .
+    container_name: smartfit-backend
+    ports:
+      - "5001:5001"
+    environment:
+      - SECRET_KEY=smartfit-production-secret-key-replace
+      - PORT=5001
+      - FRONTEND_URL=http://localhost:8080
+    volumes:
+      - ./instance:/app/instance
+    restart: unless-stopped
+

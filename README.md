@@ -3,62 +3,63 @@
   <img src="./Images/logo.PNG" alt="SmartFit Logo" width="200"/>
 </p>
 <p align="center">
-  <em>Innovative project for intelligent size recommendation in online shopping</em>
-</p>
-<br>
-<p align="center">
-  <img alt="Repo size" src="https://img.shields.io/github/repo-size/YourUsername/SmartFit?style=flat-square">
-  <img alt="Languages used" src="https://img.shields.io/github/languages/count/YourUsername/SmartFit?style=flat-square">
-  <img alt="Last commit" src="https://img.shields.io/github/last-commit/YourUsername/SmartFit?style=flat-square">
+  <em>Иновативна система за интелигентна препоръка на размер при онлайн пазаруване</em>
 </p>
 
-## 🔍 What is it about?
+---
 
-SmartFit is an intelligent system that uses machine learning to suggest the most suitable clothing size based on:
+## 🔍 За какво служи проектът?
 
-- user's body measurements and physique
-- specific clothing characteristics (width, fabric, size)
+**SmartFit** е интелигентна система, която използва алгоритми за машинно обучение (Machine Learning), за да предложи най-подходящия размер дреха на база на:
 
-🎯 No more returns. Hello, perfect fit!
+- **Телесни мерки на потребителя**: ръст, тегло, талия, гръдна обиколка, тип тяло и пол
+- **Характеристики на дрехата**: вид дреха (риза, панталон, рокля, яке и др.), материя (еластичност) и ширина на дрехата (`garment_width`)
 
-## 🧠 How does it work?
+🎯 **Край на грешните размери и безкрайните връщания на поръчки!**
 
-1. User inputs their measurements
-2. Chooses a clothing item from the catalog
-3. The system processes the data with an ML model
-4. Returns a recommendation:
+---
 
-✅ Recommended size: M  
-⚠️ If you prefer looser clothes – L
+## 🧠 Как работи системата?
 
-## 🛠️ Technologies
+```mermaid
+flowchart LR
+    A["👤 Потребител\nвъвежда мерки"] --> B["👗 Избор на дреха\nот каталога"]
+    B --> C["🤖 Calibrated ML Model\n(HistGradientBoosting)"]
+    C --> D["✅ Препоръчан размер\n(напр. M с 95% увереност)"]
+    C --> E["⚠️ Алтернативен размер\n(напр. L при по-свободна кройка)"]
+```
 
-| Category       | Technologies                 |
-| -------------- | ---------------------------- |
-| Backend        | Python + Flask               |
-| ML Model       | Random Forest                |
-| Database       | SQLite                       |
-| Frontend       | HTML / CSS / WTForms / React |
-| Authentication | Flask-Login                  |
+1. Потребителят въвежда телесните си мерки (ръст, тегло, талия, гръдна обиколка).
+2. Избира модел от каталога с дрехи.
+3. Моделът за машинно обучение анализира мерките в комбинация с ширината и еластичността на избраната дреха.
+4. Връща персонализирана препоръка с изчислено ниво на увереност (Confidence Score) и алтернативен съседен размер при гранични случаи.
 
-## 🎨 Design and role-based functionality
+---
 
-🔑 **Roles in the system:**
+## 🛠️ Технологичен стек
 
-- 👤 User – inputs measurements, receives recommendations
-- 🧵 Seller – adds new clothing models
+| Категория | Технологии |
+| :--- | :--- |
+| **Backend** | Python 3.12 / 3.13, Flask 3, Flask-Login, Flask-Mail, Flask-CORS, Flask-Migrate |
+| **Machine Learning** | Scikit-Learn (`HistGradientBoostingClassifier`, `RandomForestClassifier`), `CalibratedClassifierCV`, Pandas, NumPy |
+| **Database** | SQLite, SQLAlchemy 2.0 (ORM) |
+| **Frontend** | React 18, TypeScript, Tailwind CSS, Vite, Radix UI (shadcn), Lucide Icons |
+| **Тестване (QA)** | Python `unittest` (10 автоматизирани теста за автентикация, каталог и ML) |
+| **Логване и мониторинг** | Многоканална ротационна система за логове (`RotatingFileHandler`), аналитичен модул `analyze_logs.py` |
 
-## 📸 Functionality preview
+---
 
-<p align="center">
-  <img src="./Images/size_page.jpeg" alt="Size Recommendation Example" width="500"/>
-</p>
+## 🔑 Роли в системата
 
-## 💻 Running the Project
+- 👤 **Потребител (User)**: Въвежда и редактира мерки, получава AI препоръки, разглежда каталога и оставя коментари за дрехи, за които е получил препоръка.
+- 🧵 **Търговец / Продавач (Seller)**: Добавя нови обяви за дрехи през специализиран панел с модална форма, управлява и изтрива своите обяви.
+- 🛡️ **Администратор (Admin)**: Достъп до пълно табло с аналитики, брой потребители, обяви, препоръки и възможност за управление на съдържанието.
 
-## Follow the steps below to run SmartFit locally.
+---
 
-### 1️⃣ Clone the repo
+## 💻 Инструкции за стартиране на проекта
+
+### 1️⃣ Клониране на хранилището
 
 ```bash
 git clone https://github.com/YourUsername/SmartFit.git
@@ -67,57 +68,25 @@ cd SmartFit
 
 ---
 
-### 2️⃣ Install Python 3.12
-
-Make sure you have **Python 3.12** installed. You can check with:
-
-```bash
-python3 --version
-# or
-python --version
-```
-
----
-
-### 3️⃣ Create a virtual environment (venv)
+### 2️⃣ Създаване и активиране на виртуална среда (venv)
 
 #### macOS / Linux:
-
 ```bash
 python3 -m venv venv
-```
-
-#### Windows:
-
-```bash
-python -m venv venv
-```
-
----
-
-### 4️⃣ Activate the virtual environment
-
-#### macOS / Linux:
-
-```bash
 source venv/bin/activate
 ```
 
-#### Windows (Command Prompt):
-
+#### Windows:
 ```cmd
+python -m venv venv
 venv\Scripts\activate.bat
-```
-
-#### Windows (PowerShell):
-
-```powershell
-venv\Scripts\Activate.ps1
+# или в PowerShell:
+# venv\Scripts\Activate.ps1
 ```
 
 ---
 
-### 5️⃣ Install dependencies
+### 3️⃣ Инсталиране на зависимостите
 
 ```bash
 pip install -r requirements.txt
@@ -125,39 +94,134 @@ pip install -r requirements.txt
 
 ---
 
-### 6️⃣ Start the servers
+### 4️⃣ Стартиране на тестовете
 
-#### Backend (Flask):
+За да се уверите, че всичко работи изправно (сигурност, API маршрути, ML модел):
 
+```bash
+python -m unittest discover tests
+```
+
+---
+
+### 5️⃣ Стартиране на сървърите
+
+#### Бекенд (Flask API на порт 5001):
 ```bash
 python app.py
 ```
 
-#### Frontend (React):
-
+#### Фронтенд (React на порт 8080):
 ```bash
 cd PresentationLayer
 npm install
 npm run dev
 ```
 
----
-
-📝 **Note:** Make sure you have Node.js and npm installed for the frontend part.
-
-## 📂 Documents
-
-- 📄 <a href = "https://codingburgas-my.sharepoint.com/:w:/g/personal/fhpopova21_codingburgas_bg/EZhCU6_aEY1OuL1QiG-AsNEBeLoLGYUOXYVc5c44Xzngzg?e=qOp5ub">[Документация]</a>
+Отворете [http://localhost:8080](http://localhost:8080) в браузъра.
 
 ---
 
-## ✨ Author
+## 🔬 Машинно обучение и EDA (CRISP-DM Архитектура)
 
-👩 **Filipa Popova** — Software developer, UX enthusiast, passionate about real solutions to real problems.
+Проектът разполага с напълно отделен и структуриран MLOps пайплайн (`ml_pipeline/`):
+
+1. **Цялостно автоматизирано изпълнение (Data Prep -> EDA -> Training -> Model Registry)**:
+   ```bash
+   python ml_pipeline/pipeline.py
+   ```
+
+2. **Изпълнение по фази съгласно CRISP-DM**:
+   - **Data Preparation (Генериране на данни):**
+     ```bash
+     python ml_pipeline/data_preparation/generate_dataset.py
+     # Записва ml_pipeline/data/processed/training_data.csv (6,000 записа)
+     ```
+   - **Data Understanding (EDA анализ):**
+     ```bash
+     python ml_pipeline/data_understanding/eda_analysis.py
+     # Записва ml_pipeline/data_understanding/EDA_REPORT.md
+     ```
+   - **Training & Model Registry (Обучение и калибриране):**
+     ```bash
+     python ml_pipeline/training/train_model.py
+     # Сравнява Logistic Regression, Random Forest и HistGradientBoosting
+     # Записва оценката в ml_pipeline/training/model_evaluation.txt
+     # Експортира готовия модел в ml_pipeline/models/smartfit_model.pkl
+     ```
 
 ---
 
-## 📬 Contact Me
+## 📁 Структура на проекта
 
-- 📧 fhpopova21@codingburgas.bg
-- 🌐 [Портфолио уебсайт](https://yourportfolio.com)
+```
+SmartFit/
+├── app/                              # Flask REST API Backend
+│   ├── __init__.py                   # Application Factory (create_app)
+│   ├── models.py                     # SQLAlchemy модели (User, Clothing, RecommendationHistory, Comment)
+│   ├── logging_config.py             # Логинг архитектура
+│   ├── seed.py                       # Начални данни (Admin, Продавачи, Каталог)
+│   ├── decorators.py                 # Ролеви декоратори (@seller_required, @admin_required)
+│   ├── services/                     # Сървизен слой
+│   │   ├── __init__.py
+│   │   └── recommendation_service.py # Онлайн ML инференция в реално време
+│   ├── ml/
+│   │   └── ml_model.py               # Обратно-съвместим мостов модул
+│   └── routes/                       # API Blueprints (auth, clothing, users, admin, comments)
+│
+├── ml_pipeline/                      # CRISP-DM Machine Learning Pipeline
+│   ├── data/
+│   │   ├── raw/                      # Референтни стандарти (ISO 8559, EN 13402)
+│   │   └── processed/                # Валидиран тренировъчен дейтасет (training_data.csv)
+│   ├── data_understanding/           # EDA статистика и аналитичен доклад (EDA_REPORT.md)
+│   ├── data_preparation/             # Генератор на данни (generate_dataset.py)
+│   ├── training/                     # Обучение, калибрация и метрики (train_model.py)
+│   ├── models/                       # Model Registry (smartfit_model.pkl)
+│   ├── pipeline.py                   # Главен оркестратор
+│   └── README.md                     # Документация на ML процеса
+│
+├── PresentationLayer/                # SPA Frontend (React + TypeScript + Vite + Tailwind)
+│   ├── src/pages/                    # Основни страници (Catalog, Recommendations, SellerListings, Admin)
+│   ├── src/components/               # UI Компоненти (ClothingCard, Dialog, Navbar, Forms)
+│   └── src/services/                 # API клиенти (authService, measurementsService)
+│
+├── tests/                            # Автоматизирани тестове (unittest)
+│   ├── test_auth.py                  # Тестове за регистрация, вход и JWT
+│   ├── test_clothes.py               # Тестове за CRUD операции с дрехи
+│   ├── test_ml.py                    # Тестове за модела и инференцията
+│   └── test_admin.py                 # Тестове за администраторски права
+│
+├── Dockerfile & docker-compose.yml   # Контейнеризация
+├── requirements.txt                  # Python зависимости
+└── app.py                            # Входна точка за стартиране на бекенда
+```
+│   └── routes/
+│       ├── auth_routes.py    # Регистрация, вход, токени
+│       ├── user_routes.py    # Потребителски профил и мерки
+│       ├── clothing_routes.py# Каталог, препоръки, продавач CRUD
+│       ├── comment_routes.py # Коментари и отзиви
+│       └── admin_routes.py   # Административно табло
+├── PresentationLayer/        # React + TypeScript + Vite + Tailwind фронтенд
+│   ├── src/
+│   │   ├── components/       # UI компоненти
+│   │   ├── pages/            # Страници (Каталог, Препоръка, Продавач, Админ)
+│   │   ├── store/            # Zustand глобален стейт (authStore)
+│   │   └── types/            # TypeScript дефиниции
+│   └── package.json
+├── tests/                    # Автоматизирани тестове
+│   ├── test_auth.py          # Тестове за автентикация и сигурност
+│   ├── test_clothes.py       # Тестове за каталога и продавачи
+│   └── test_ml.py            # Тестове за предсказване на размер
+├── instance/                 # База данни (SQLite) и структурирани логове
+├── analyze_logs.py           # Анализатор на системните логове
+├── app.py                    # Входна точка за бекенда
+├── requirements.txt
+└── README.md
+```
+
+---
+
+## ✨ Автор
+
+👩 **Филипа Попова** — Софтуерен разработчик, 11 "б" клас  
+📧 fhpopova21@codingburgas.bg

@@ -15,7 +15,7 @@ Blueprint за всички маршрути, свързани с автенти
 """
 logger = logging.getLogger('auth_bp')
 
-@auth_bp.route('/api/register', methods=['POST'])
+@auth_bp.route('/register', methods=['POST'])
 def register():
     """
     Регистрира нов потребител.
@@ -25,9 +25,9 @@ def register():
     """
     try:
         data = request.get_json()
-        logger.info(f"Registration attempt for username: {data.get('username', 'unknown')}")
         if not data:
             return jsonify({'error': 'No data provided'}), 400
+        logger.info(f"Registration attempt for username: {data.get('username', 'unknown')}")
         required_fields = ['username', 'email', 'password']
         for field in required_fields:
             if field not in data:
@@ -39,10 +39,11 @@ def register():
         if User.query.filter_by(username=data['username']).first():
             logger.warning(f"Registration failed - username already taken: {data['username']}")
             return jsonify({'error': 'Username already taken'}), 400
+        # Сигурност: забранява се самоволно създаване на администраторски акаунти
         role = data.get('role', 'user')
-        if role not in ['user', 'seller', 'admin']:
-            logger.warning(f"Registration failed - invalid role: {role}")
-            return jsonify({'error': 'Invalid role specified'}), 400
+        if role not in ['user', 'seller']:
+            logger.warning(f"Registration rejected for unauthorized role: {role}")
+            return jsonify({'error': 'Невалидна роля. Публичната регистрация позволява само роли user или seller.'}), 400
         user = User(
             username=data['username'],
             email=data['email'],
@@ -59,7 +60,7 @@ def register():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-@auth_bp.route('/api/login', methods=['POST'])
+@auth_bp.route('/login', methods=['POST'])
 def login():
     """
     Вход в системата.
@@ -69,10 +70,10 @@ def login():
     """
     try:
         data = request.get_json()
-        logger.info(f"Login attempt for username: {data.get('username', 'unknown')}")
         if not data:
             return jsonify({'error': 'No data provided'}), 400
-        user = User.query.filter_by(username=data['username']).first()
+        logger.info(f"Login attempt for username: {data.get('username', 'unknown')}")
+        user = User.query.filter_by(username=data.get('username')).first()
         if user and user.check_password(data['password']):
             login_user(user)
             log_user_action("user_login", user.id)
@@ -87,7 +88,7 @@ def login():
         log_error(e, "Login error")
         return jsonify({'error': str(e)}), 500
 
-@auth_bp.route('/api/logout')
+@auth_bp.route('/logout')
 def logout():
     """
     Изход от системата (logout).
@@ -101,7 +102,7 @@ def logout():
         log_error(e, "Logout error")
         return jsonify({'error': str(e)}), 500
 
-@auth_bp.route('/api/forgot-password', methods=['POST'])
+@auth_bp.route('/forgot-password', methods=['POST'])
 def forgot_password():
     """
     Изпраща имейл за възстановяване на парола.
@@ -110,6 +111,8 @@ def forgot_password():
     Изход: JSON със статус
     """
     data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
     email = data.get('email')
     if not email:
         return jsonify({'error': 'Email is required'}), 400
@@ -117,7 +120,9 @@ def forgot_password():
     if user:
         serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
         token = serializer.dumps(user.email, salt='password-reset-salt')
-        reset_url = url_for('auth_bp.reset_password', token=token, _external=True)
+        # Линкът трябва да сочи към SPA страницата на фронтенда
+        frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:8080')
+        reset_url = f"{frontend_url}/auth/reset-password/{token}"
         msg = Message('Reset your SmartFit password', recipients=[user.email])
         msg.body = f"Hello {user.username},\n\nClick the link to reset your password: {reset_url}\n\nIf you did not request this, ignore this email."
         try:
@@ -129,7 +134,7 @@ def forgot_password():
     # Always respond with success for security
     return jsonify({'message': 'If the email is registered, a reset link has been sent.'}), 200
 
-@auth_bp.route('/api/reset-password/<token>', methods=['POST'])
+@auth_bp.route('/reset-password/<token>', methods=['POST'])
 def reset_password(token):
     """
     Смяна на парола чрез токен от имейл.
@@ -138,6 +143,8 @@ def reset_password(token):
     Изход: JSON със статус
     """
     data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
     password = data.get('password')
     confirm_password = data.get('confirm_password')
     if not password or not confirm_password:

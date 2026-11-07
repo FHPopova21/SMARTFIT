@@ -153,9 +153,11 @@ class LogAnalyzer:
         return report
     
     def save_report(self, report, filename=None):
-        """Запазва отчета в JSON файл"""
+        """Запазва отчета в JSON файл в instance/logs/reports"""
+        reports_dir = os.path.join(self.log_dir, "reports")
+        os.makedirs(reports_dir, exist_ok=True)
         if filename is None:
-            filename = f"log_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            filename = os.path.join(reports_dir, f"log_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
         
         with open(filename, 'w', encoding='utf-8') as f:
             json.dump(report, f, indent=2, ensure_ascii=False)

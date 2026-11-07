@@ -10,7 +10,7 @@ import { ClothingItem } from '@/types';
 import { TrendingUp, AlertCircle, CheckCircle, ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-const API_URL = 'http://localhost:5001/api';
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 interface SizeRecommendation {
   recommendedSize: string;
@@ -129,7 +129,7 @@ const Recommendation = () => {
         garment_width: selectedItem?.measurements.width
       };
 
-      const response = await fetch('http://localhost:5001/api/predict', {
+      const response = await fetch(`${API_URL}/predict`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
