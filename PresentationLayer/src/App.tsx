@@ -20,6 +20,8 @@ import AdminDashboard from "@/pages/AdminDashboard";
 import About from './pages/About';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import AboutYouQuiz from './pages/AboutYouQuiz';
+import ShoeRecommendation from './pages/ShoeRecommendation';
 
 const queryClient = new QueryClient();
 
@@ -38,7 +40,9 @@ const App = () => (
             <Route path="/profile" element={<Profile />} />
             <Route path="/dashboard" element={<UserDashboard />} />
             <Route path="/measurements" element={<Measurements />} />
+            <Route path="/quiz" element={<AboutYouQuiz />} />
             <Route path="/recommendation" element={<Recommendation />} />
+            <Route path="/shoes" element={<ShoeRecommendation />} />
             <Route path="/clothing" element={<ClothingListing />} />
             <Route path="/seller" element={<SellerDashboard />} />
             <Route path="/seller/listings" element={<SellerListings />} />

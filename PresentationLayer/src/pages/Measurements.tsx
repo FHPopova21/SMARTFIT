@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,11 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuthStore } from '@/store/authStore';
 import { useToast } from '@/hooks/use-toast';
 import { BodyMeasurements } from '@/types';
-import { Save, User } from 'lucide-react';
+import { Save, User, AlertCircle } from 'lucide-react';
 import { measurementsService } from '@/services/measurementsService';
 
 const Measurements = () => {
-  const { user, updateUser } = useAuthStore();
+  const { user, updateUser, isAuthenticated } = useAuthStore();
+  const navigate = useNavigate();
   const { toast } = useToast();
   
   const [measurements, setMeasurements] = useState<BodyMeasurements>({
@@ -76,6 +78,32 @@ const Measurements = () => {
                typeof value === 'string' ? value : Number(value)
     }));
   };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <Card className="glass-card text-center py-8">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-center text-xl text-gray-800">
+              <AlertCircle className="w-6 h-6 mr-2 text-orange-500" />
+              Необходим е вход в профила
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-gray-600">
+              За да въведете и запазите вашите телесни мерки за персонализирани препоръки, моля първо влезте в профила си.
+            </p>
+            <Button 
+              onClick={() => navigate('/signin')} 
+              className="bg-beige-600 hover:bg-beige-700 text-white px-6"
+            >
+              Вход в профил
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto p-6">

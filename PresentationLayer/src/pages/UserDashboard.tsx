@@ -2,40 +2,44 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/authStore';
-import { Link } from 'react-router-dom';
-import { User, ShoppingBag, Search, TrendingUp } from 'lucide-react';
+import { Link, Navigate } from 'react-router-dom';
+import { User, ShoppingBag, Search, TrendingUp, Sliders, Footprints } from 'lucide-react';
 
 const UserDashboard = () => {
-  const { user } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/signin" replace />;
+  }
 
   const quickActions = [
     {
-      title: 'Мои телесни мерки',
-      description: 'Въведете или редактирайте вашите мерки',
-      icon: User,
-      link: '/measurements',
-      color: 'bg-blue-500'
+      title: 'About You Quiz',
+      description: 'Интерактивен въпросник за пропорции и кройка',
+      icon: Sliders,
+      link: '/quiz',
+      color: 'bg-[#B8956A]'
     },
     {
-      title: 'AI Препоръка за размер',
-      description: 'Получете интелигентна препоръка',
+      title: 'AI Препоръка за дрехи',
+      description: 'Анализ на размери с визуален манекен',
       icon: TrendingUp,
       link: '/recommendation',
-      color: 'bg-green-500'
+      color: 'bg-emerald-600'
     },
     {
-      title: 'Прегледай дрехи',
-      description: 'Търсете сред обявите на търговци',
+      title: 'Скенер за обувки',
+      description: 'Измерване на стъпало чрез OpenCV (А4)',
+      icon: Footprints,
+      link: '/shoes',
+      color: 'bg-sky-600'
+    },
+    {
+      title: 'Каталог дрехи',
+      description: 'Прегледайте моделите на търговците',
       icon: ShoppingBag,
       link: '/clothing',
-      color: 'bg-purple-500'
-    },
-    {
-      title: 'Търсене',
-      description: 'Търсете конкретна дреха',
-      icon: Search,
-      link: '/clothing',
-      color: 'bg-orange-500'
+      color: 'bg-[#3A2E2B]'
     }
   ];
 

@@ -96,10 +96,18 @@
 
 @layer components {
   .glass-card {
-    @apply bg-white/80 backdrop-blur-sm border border-white/20 shadow-lg;
+    @apply bg-white/95 backdrop-blur-md border border-beige-200/80 shadow-sm hover:shadow-md transition-shadow rounded-2xl;
   }
   
   .gradient-text {
-    @apply bg-gradient-to-r from-beige-600 to-beige-800 bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-[#3A2E2B] via-[#7A624E] to-[#B8956A] bg-clip-text text-transparent;
+  }
+
+  .gradient-gold {
+    @apply bg-gradient-to-r from-[#D4AF37] via-[#C5A880] to-[#B8956A];
+  }
+
+  .gradient-hero {
+    @apply bg-gradient-to-br from-[#FAF7F2] via-[#F5EFE6] to-[#FAF7F2];
   }
 }

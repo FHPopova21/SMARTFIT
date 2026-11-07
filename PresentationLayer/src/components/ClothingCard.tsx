@@ -24,6 +24,7 @@ const ClothingCard = ({
 }: ClothingCardProps) => {
   const getClothingTypeLabel = (type: string) => {
     const labels = {
+      't-shirt': 'Тениска',
       shirt: 'Риза',
       pants: 'Панталон',
       dress: 'Рокля',
@@ -114,7 +115,10 @@ const ClothingCard = ({
         ) : (
           showRecommendButton && (
             <Button 
-              onClick={onRecommend}
+              onClick={(e) => {
+                e.stopPropagation();
+                onRecommend();
+              }}
               className="w-full bg-beige-600 hover:bg-beige-700 text-white"
               size="sm"
             >
