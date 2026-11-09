@@ -25,6 +25,8 @@ export interface ClothingItem {
   measurements: ClothingMeasurements;
   merchantId: string;
   merchantName: string;
+  sellerId?: string;
+  sellerName?: string;
   price?: number;
   image?: string;
   description?: string;
@@ -36,7 +38,7 @@ export interface ClothingMeasurements {
   sleeves?: number; // cm
 }
 
-export type ClothingType = 'shirt' | 'pants' | 'dress' | 'jacket' | 'skirt' | 'sweater';
+export type ClothingType = 'shirt' | 't-shirt' | 'pants' | 'dress' | 'jacket' | 'skirt' | 'sweater';
 export type MaterialType = 'elastic' | 'non-elastic' | 'semi-elastic';
 export type ClothingSize = 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL';
 

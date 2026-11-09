@@ -55,7 +55,8 @@ const SellerListings = () => {
     }
     // Fallback към mock данни при липса на връзка
     const fallback = mockClothingItems.filter(item => 
-      item.sellerName === user?.name || item.sellerId === String(user?.id)
+      (item.merchantName || item.sellerName) === user?.name || 
+      (item.merchantId || item.sellerId) === String(user?.id)
     );
     setSellerItems(fallback);
   };
@@ -171,21 +172,21 @@ const SellerListings = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
+    <div className="max-w-7xl mx-auto p-6 min-h-screen bg-[#FAFAFC]">
       {/* Header */}
       <div className="mb-8">
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2 flex items-center">
-              <Package className="w-8 h-8 mr-3 text-beige-600" />
+            <h1 className="text-3xl font-black text-zinc-950 font-heading mb-2 flex items-center">
+              <Package className="w-8 h-8 mr-3 text-indigo-600" />
               Мои обяви
             </h1>
-            <p className="text-gray-600">
-              Управлявайте вашите обяви за дрехи в каталога на SmartFit
+            <p className="text-zinc-600 text-sm">
+              Управлявайте вашите обяви за дрехи в каталога на FitVision с пълна съвместимост по ISO 8559.
             </p>
           </div>
           <Button 
-            className="bg-beige-600 hover:bg-beige-700 text-white" 
+            className="bg-zinc-950 hover:bg-zinc-850 text-white font-bold shadow-xs rounded-xl" 
             onClick={() => setIsAddOpen(true)}
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -195,28 +196,28 @@ const SellerListings = () => {
       </div>
 
       {/* Filters */}
-      <Card className="glass-card mb-8">
+      <Card className="bg-white border border-zinc-200/80 rounded-2xl shadow-xs mb-8">
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <Search className="w-5 h-5 mr-2" />
+          <CardTitle className="flex items-center text-zinc-950 text-lg font-heading">
+            <Search className="w-5 h-5 mr-2 text-indigo-600" />
             Филтри
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Търсене</label>
+              <label className="text-xs font-mono font-bold text-zinc-700">Търсене</label>
               <Input
                 placeholder="Търсене по име на дреха..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="border-beige-300 focus:border-beige-500"
+                className="border-zinc-200 focus:border-indigo-600 rounded-xl"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Тип дреха</label>
+              <label className="text-xs font-mono font-bold text-zinc-700">Тип дреха</label>
               <Select value={selectedType} onValueChange={setSelectedType}>
-                <SelectTrigger className="border-beige-300 focus:border-beige-500">
+                <SelectTrigger className="border-zinc-200 focus:border-indigo-600 rounded-xl">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -234,8 +235,8 @@ const SellerListings = () => {
 
       {/* Results summary */}
       <div className="mb-4">
-        <p className="text-gray-600">
-          Намерени {filteredItems.length} от {sellerItems.length} обяви
+        <p className="text-zinc-500 font-mono text-xs">
+          Намерени <span className="font-bold text-zinc-950">{filteredItems.length}</span> от {sellerItems.length} обяви
         </p>
       </div>
 
@@ -253,24 +254,24 @@ const SellerListings = () => {
       </div>
 
       {filteredItems.length === 0 && !loading && (
-        <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">Няма намерени обяви по зададените критерии.</p>
+        <div className="text-center py-16 bg-white rounded-2xl border border-zinc-200">
+          <p className="text-zinc-400 text-sm font-medium">Няма намерени обяви по зададените критерии.</p>
         </div>
       )}
 
       {/* Модален прозорец за добавяне на нова обява */}
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto bg-white rounded-2xl border border-zinc-200 shadow-xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center text-xl">
-              <Sparkles className="w-5 h-5 mr-2 text-beige-600" />
+            <DialogTitle className="flex items-center text-xl font-heading text-zinc-950">
+              <Sparkles className="w-5 h-5 mr-2 text-indigo-600" />
               Добавяне на нова обява за дреха
             </DialogTitle>
           </DialogHeader>
 
           <form onSubmit={handleCreateClothing} className="space-y-4 mt-2">
             <div>
-              <label className="text-sm font-medium text-gray-700">Име на артикула *</label>
+              <label className="text-xs font-mono font-bold text-zinc-700">Име на артикула *</label>
               <Input
                 placeholder="напр. Класическа бяла риза"
                 value={formData.name}
@@ -401,10 +402,10 @@ const SellerListings = () => {
             </div>
 
             <div className="flex justify-end space-x-2 pt-2">
-              <Button type="button" variant="outline" onClick={() => setIsAddOpen(false)}>
+              <Button type="button" variant="outline" onClick={() => setIsAddOpen(false)} className="rounded-xl border-zinc-200">
                 Отказ
               </Button>
-              <Button type="submit" className="bg-beige-600 hover:bg-beige-700 text-white" disabled={submitting}>
+              <Button type="submit" className="bg-zinc-950 hover:bg-zinc-850 text-white font-bold rounded-xl shadow-xs" disabled={submitting}>
                 {submitting ? 'Записване...' : 'Създай обява'}
               </Button>
             </div>

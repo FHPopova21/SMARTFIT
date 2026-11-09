@@ -1,130 +1,137 @@
-
 import { ClothingItem } from '@/types';
 
 export const mockClothingItems: ClothingItem[] = [
   {
     id: '1',
-    name: 'Класическа бизнес риза',
+    name: 'Класическа бизнес риза Oxford',
     type: 'shirt',
     material: 'non-elastic',
     size: 'M',
     measurements: {
       width: 52,
       length: 75,
-      sleeves: 65
+      sleeves: 65,
     },
     merchantId: '2',
-    merchantName: 'Fashion Store BG',
-    price: 89,
-    description: 'Елегантна бяла риза за официални случаи'
+    merchantName: 'Milano Tailors',
+    price: 89.0,
+    image: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=700&q=80',
+    description: 'Елегантна бяла риза от 100% египетски памук с италианска яка, подходяща за официални поводи и бизнес срещи.',
   },
   {
     id: '2',
-    name: 'Спортна тениска',
+    name: 'Спортна тениска Dry-Fit Pro',
     type: 'shirt',
     material: 'elastic',
     size: 'L',
     measurements: {
       width: 55,
       length: 70,
-      sleeves: 25
+      sleeves: 25,
     },
     merchantId: '2',
-    merchantName: 'Sport World',
-    price: 45,
-    description: 'Комфортна тениска за тренировки'
+    merchantName: 'AeroAthletics',
+    price: 49.0,
+    image: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=700&q=80',
+    description: 'Дишаща спортна тениска с технология за отнемане на влагата и максимална еластичност при движение.',
   },
   {
     id: '3',
-    name: 'Дамска рокля',
+    name: 'Копринена вечерна рокля Aurora',
     type: 'dress',
     material: 'semi-elastic',
     size: 'S',
     measurements: {
       width: 46,
       length: 95,
-      sleeves: 60
+      sleeves: 60,
     },
     merchantId: '2',
-    merchantName: 'Elegant Lady',
-    price: 120,
-    description: 'Стилна рокля за специални поводи'
+    merchantName: 'Atelier Elegance',
+    price: 149.0,
+    image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=700&q=80',
+    description: 'Изискана коктейлна рокля с акцент върху талията и нежен падеж, изработена от сатен с лек еластан.',
   },
   {
     id: '4',
-    name: 'Джинсов панталон',
+    name: 'Дънков панталон Straight Fit Selvage',
     type: 'pants',
     material: 'non-elastic',
     size: 'M',
     measurements: {
       width: 42,
-      length: 100
+      length: 100,
     },
     merchantId: '2',
-    merchantName: 'Denim Co.',
-    price: 95,
-    description: 'Класически дънки с перфектен крой'
+    merchantName: 'Nordic Denim Co.',
+    price: 119.0,
+    image: 'https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&w=700&q=80',
+    description: 'Автентичен прав деним от 13.5 oz японски памук, структуриран да пасва стабилно по ханша и бедрата.',
   },
   {
     id: '5',
-    name: 'Зимно яке',
+    name: 'Вълнено връхно палто Kensington',
     type: 'jacket',
     material: 'non-elastic',
     size: 'L',
     measurements: {
       width: 58,
-      length: 68,
-      sleeves: 68
+      length: 78,
+      sleeves: 68,
     },
     merchantId: '2',
-    merchantName: 'Winter Wear',
-    price: 180,
-    description: 'Топло яке за студените дни'
+    merchantName: 'Sartorial London',
+    price: 240.0,
+    image: 'https://images.unsplash.com/photo-1544923246-77307dd654cb?auto=format&fit=crop&w=700&q=80',
+    description: 'Премиум камилско палто от 80% естествена вълна с двуредно закопчаване и подплата от вискоза.',
   },
   {
     id: '6',
-    name: 'Къс панталон',
+    name: 'Ленен летен панталон Riviera',
     type: 'pants',
     material: 'elastic',
     size: 'M',
     measurements: {
       width: 40,
-      length: 45
+      length: 48,
     },
     merchantId: '2',
-    merchantName: 'Summer Style',
-    price: 55,
-    description: 'Лек панталон за лятото'
+    merchantName: 'Capri Lifestyle',
+    price: 69.0,
+    image: 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?auto=format&fit=crop&w=700&q=80',
+    description: 'Лек и дишащ панталон от органичен лен с еластичен колан за максимален летен комфорт.',
   },
   {
     id: '7',
-    name: 'Пуловер от вълна',
+    name: 'Кашмирен пуловер Highland Knit',
     type: 'sweater',
     material: 'semi-elastic',
     size: 'L',
     measurements: {
       width: 54,
-      length: 65,
-      sleeves: 63
+      length: 66,
+      sleeves: 63,
     },
     merchantId: '2',
-    merchantName: 'Cozy Knits',
-    price: 110,
-    description: 'Мек вълнен пуловер'
+    merchantName: 'Cozy Knits Studio',
+    price: 135.0,
+    image: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=700&q=80',
+    description: 'Мек топъл пуловер с класическа плетка, съчетаващ мериносова вълна и фин кашмир.',
   },
   {
     id: '8',
-    name: 'Дамска пола',
+    name: 'Плисирана офис пола Verona',
     type: 'skirt',
     material: 'non-elastic',
     size: 'S',
     measurements: {
       width: 38,
-      length: 55
+      length: 60,
     },
     merchantId: '2',
-    merchantName: 'Elegant Lady',
-    price: 65,
-    description: 'Елегантна пола за офиса'
-  }
+    merchantName: 'Atelier Elegance',
+    price: 79.0,
+    image: 'https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?auto=format&fit=crop&w=700&q=80',
+    description: 'Стилна А-образна плисирана пола с висока талия, подчертаваща фигурата с фин структурен падеж.',
+  },
 ];

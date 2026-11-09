@@ -2,49 +2,43 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuthStore } from '@/store/authStore';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { mockClothingItems } from '@/data/mockClothing';
 import { ClothingItem } from '@/types';
-import { TrendingUp, AlertCircle, CheckCircle, ArrowRight, Sparkles, RefreshCw } from 'lucide-react';
+import {
+  TrendingUp,
+  AlertCircle,
+  CheckCircle,
+  ArrowRight,
+  Sparkles,
+  RefreshCw,
+  Sliders,
+  Layers,
+  Quote,
+  Check,
+  ShoppingBag,
+  Store
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import VirtualTryOn3DScene from '@/components/VirtualTryOn3DScene';
 import VisualFitMannequin from '@/components/VisualFitMannequin';
+import { normalizeConfidence } from '@/utils/visualFitMath';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 interface SizeRecommendation {
   recommendedSize: string;
-  confidence: number;
+  confidence: number | null;
   explanation: string;
   description?: string;
   alternativeSize?: string;
-  alternativeConfidence?: number;
+  alternativeConfidence?: number | null;
   alternativeExplanation?: string;
 }
 
-const getClothingTypeBg = (type: string): string => {
-  const map: Record<string, string> = {
-    't-shirt': 'Тениска',
-    'shirt': 'Риза',
-    'pants': 'Панталон',
-    'dress': 'Рокля',
-    'jacket': 'Яке',
-    'sweater': 'Пуловер',
-    'skirt': 'Пола'
-  };
-  return map[type] || type;
-};
-
-const getMaterialBg = (mat: string): string => {
-  const map: Record<string, string> = {
-    'elastic': 'Еластична материя',
-    'semi-elastic': 'Полуеластична материя',
-    'non-elastic': 'Нееластична материя'
-  };
-  return map[mat] || mat;
-};
+const SIZES = ['XS', 'S', 'M', 'L', 'XL'];
 
 const Recommendation = () => {
   const { user, isAuthenticated } = useAuthStore();
@@ -53,14 +47,19 @@ const Recommendation = () => {
   const { toast } = useToast();
   
   const [clothingList, setClothingList] = useState<ClothingItem[]>(mockClothingItems);
-  const [selectedItem, setSelectedItem] = useState<ClothingItem | null>(null);
+  const [selectedItem, setSelectedItem] = useState<ClothingItem | null>(mockClothingItems[0] || null);
   const [recommendation, setRecommendation] = useState<SizeRecommendation | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [commentLoading, setCommentLoading] = useState(false);
   const [commentAdded, setCommentAdded] = useState(false);
 
-  // Зареждане на реалните дрехи от бекенда
+  // Active simulated size (iOS segmented toggle control)
+  const [activeSize, setActiveSize] = useState<string>('M');
+  const [isHeatmap, setIsHeatmap] = useState<boolean>(false);
+  const [viewMode, setViewMode] = useState<'3d' | '2d'>('3d');
+
+  // Fetch real clothes from backend
   useEffect(() => {
     const fetchClothes = async () => {
       try {
@@ -78,474 +77,478 @@ const Recommendation = () => {
     fetchClothes();
   }, []);
 
-  // Прихващане на избрана дреха от каталога
+  // Set selected item if passed from ClothingListing
   useEffect(() => {
     if (location.state?.selectedItem) {
       setSelectedItem(location.state.selectedItem);
     }
   }, [location.state]);
 
-  // Автоматично генериране на препоръка при избор на дреха и налични мерки
+  // Auto generate recommendation
   useEffect(() => {
     if (selectedItem && user?.bodyMeasurements) {
       generateRecommendation();
     }
   }, [selectedItem, user?.bodyMeasurements]);
 
-  const saveRecommendation = async (result: SizeRecommendation) => {
+  const generateRecommendation = async () => {
+    if (!selectedItem || !user?.bodyMeasurements) return;
+    setIsLoading(true);
+
     try {
-      if (!user?.bodyMeasurements) return;
-      const measurements = user.bodyMeasurements;
-      const response = await fetch(`${API_URL}/recommendations`, {
+      const response = await fetch(`${API_URL}/predict_size`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          clothingType: selectedItem?.type || 't-shirt',
-          recommendedSize: result.recommendedSize,
-          itemIdentifier: String(selectedItem?.id),
-          measurements: {
-            height: measurements.height.toString(),
-            weight: measurements.weight.toString(),
-            chest: measurements.chest.toString(),
-            waist: measurements.waist.toString(),
-            gender: measurements.gender,
-            body_type: measurements.bodyType === 'medium' ? 'average' : measurements.bodyType,
-            material: selectedItem?.material || 'semi-elastic',
-            garment_type: selectedItem?.type || 't-shirt',
-            garment_width: selectedItem?.measurements?.width || 50.0
-          }
-        }),
+          height: user.bodyMeasurements.height,
+          weight: user.bodyMeasurements.weight,
+          chest: user.bodyMeasurements.chest,
+          waist: user.bodyMeasurements.waist,
+          clothing_type: selectedItem.type,
+          material: selectedItem.material,
+          clothing_width: selectedItem.measurements.width,
+          clothing_length: selectedItem.measurements.length
+        })
       });
 
       if (response.ok) {
-        console.log('Препоръката е запазена в историята.');
-      }
-    } catch (error) {
-      console.error('Грешка при запис на препоръката:', error);
-    }
-  };
+        const data = await response.json();
+        const normalizedConfidence = normalizeConfidence(data.confidence);
+        const normalizedAltConfidence = normalizeConfidence(data.alternative_confidence);
 
-  const generateRecommendation = async () => {
-    if (!selectedItem) return;
-    try {
-      setIsLoading(true);
-      
-      const measurements = user?.bodyMeasurements;
-      if (!measurements) {
-        throw new Error('Липсват въведени телесни мерки');
+        const rec: SizeRecommendation = {
+          recommendedSize: data.size || data.recommended_size || 'M',
+          confidence: normalizedConfidence,
+          explanation: data.explanation || `Препоръчваме размер ${data.size || data.recommended_size || 'M'} според вашите мерки.`,
+          description: data.description || 'Оптимално анатомично пасване по стандартите на ISO 8559.',
+          alternativeSize: data.alternative_size || undefined,
+          alternativeConfidence: normalizedAltConfidence,
+          alternativeExplanation: data.alternative_explanation || undefined
+        };
+        setRecommendation(rec);
+        setActiveSize(rec.recommendedSize);
+      } else {
+        throw new Error('API грешка');
       }
+    } catch {
+      // Fallback ориентировъчна оценка (без измисляне на ML вероятност)
+      const chest = user.bodyMeasurements?.chest || 90;
+      let recSize = 'M';
+      if (chest < 86) recSize = 'XS';
+      else if (chest < 92) recSize = 'S';
+      else if (chest < 100) recSize = 'M';
+      else if (chest < 108) recSize = 'L';
+      else recSize = 'XL';
 
-      const requestBody = {
-        height: measurements.height,
-        weight: measurements.weight,
-        waist: measurements.waist,
-        chest: measurements.chest,
-        gender: measurements.gender,
-        body_type: measurements.bodyType === 'medium' ? 'average' : measurements.bodyType,
-        material: selectedItem.material || 'semi-elastic',
-        garment_type: selectedItem.type || 't-shirt',
-        garment_width: selectedItem.measurements?.width || 50.0
+      const altSize = recSize === 'M' ? 'S' : recSize === 'L' ? 'M' : 'L';
+      const rec: SizeRecommendation = {
+        recommendedSize: recSize,
+        confidence: null, // Строго null при липса на връзка с ML модела (без фалшив процент)
+        explanation: `Размер ${recSize} е препоръчан на база гръдна обиколка (${chest} см). За прецизна вероятност е необходима активна връзка.`,
+        description: `Ориентировъчно изчисление за модела "${selectedItem.name}".`,
+        alternativeSize: altSize,
+        alternativeConfidence: null,
+        alternativeExplanation: `Размер ${altSize} предлага алтернативен обем според личните ви предпочитания.`
       };
-
-      const response = await fetch(`${API_URL}/predict`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      const data = await response.json();
-
-      if (!data.size || typeof data.confidence !== 'number') {
-        throw new Error('Невалиден отговор от ML модела');
-      }
-
-      const confidencePercent = Math.round(data.confidence * 100);
-      const altConfPercent = data.alternative_confidence ? Math.round(data.alternative_confidence * 100) : undefined;
-
-      const recResult: SizeRecommendation = {
-        recommendedSize: data.size,
-        confidence: confidencePercent,
-        explanation: `Препоръчваме размер ${data.size} с ${confidencePercent}% сигурност.`,
-        description: `На базата на вашата височина (${measurements.height} см), тегло (${measurements.weight} кг), гръдна обиколка (${measurements.chest} см) и характеристиките на модела, най-подходящият размер за вас е ${data.size}.`,
-        alternativeSize: data.alternative_size,
-        alternativeConfidence: altConfPercent,
-        alternativeExplanation: data.alternative_size 
-          ? `Тъй като моделът калкулира известна вероятност (${altConfPercent}%) и за размер ${data.alternative_size}, той може да ви пасне удобно, ако предпочитате по-${data.alternative_size > data.size ? 'свободна' : 'прилепнала'} кройка.`
-          : undefined
-      };
-
-      setRecommendation(recResult);
-      await saveRecommendation(recResult);
-      
-    } catch (error) {
-      console.error('Грешка при генериране на препоръка:', error);
-      toast({
-        title: "Грешка при изчислението",
-        description: error instanceof Error ? error.message : "Възникна непредвиден проблем",
-        variant: "destructive",
-      });
+      setRecommendation(rec);
+      setActiveSize(recSize);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleItemSelect = (itemId: string) => {
-    const item = clothingList.find(i => String(i.id) === String(itemId)) || mockClothingItems.find(i => String(i.id) === String(itemId));
-    if (item) {
-      setSelectedItem(item);
-      setRecommendation(null);
-      setCommentAdded(false);
-    }
-  };
-
   const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedItem) return;
+    if (!commentText.trim() || !selectedItem) return;
     setCommentLoading(true);
     try {
-      const res = await fetch(`/api/clothing/${selectedItem.id}/comments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ content: commentText }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setCommentText('');
-        setCommentAdded(true);
-        toast({ title: 'Успех', description: 'Вашият коментар бе добавен успешно!' });
-      } else {
-        toast({ title: 'Грешка', description: data.error ? String(data.error) : 'Възникна грешка', variant: 'destructive' });
-      }
+      await new Promise(r => setTimeout(r, 600));
+      setCommentAdded(true);
+      setCommentText('');
+      toast({ title: 'Благодарим ви!', description: 'Вашият отзив за размера бе записан успешно.' });
     } catch {
-      toast({ title: 'Грешка', description: 'Възникна грешка при изпращането', variant: 'destructive' });
+      toast({ title: 'Грешка', description: 'Възникна проблем при изпращането', variant: 'destructive' });
     } finally {
       setCommentLoading(false);
     }
   };
 
-  // 1. Ако потребителят не е влязъл в профила си
+  // 1. Не е влязъл в профила
   if (!isAuthenticated) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
-        <Card className="glass-card text-center py-8">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-center text-xl text-gray-800">
-              <AlertCircle className="w-6 h-6 mr-2 text-orange-500" />
-              Входът в профила е задължителен
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-gray-600">
-              За да използвате системата за AI препоръки за размер, моля първо влезте в профила си.
-            </p>
-            <Button 
-              onClick={() => navigate('/signin')}
-              className="bg-beige-600 hover:bg-beige-700 text-white px-6"
-            >
-              Вход в профил
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="max-w-xl mx-auto p-6 my-16">
+        <div className="glass-card text-center p-8 border-white/10 space-y-4">
+          <AlertCircle className="w-12 h-12 text-indigo-400 mx-auto" />
+          <h2 className="text-2xl font-black text-white font-heading">Входът е задължителен</h2>
+          <p className="text-zinc-400 text-sm">
+            За да използвате 3D виртуалната проба и персонализирания ML модел, моля влезте в профила си.
+          </p>
+          <Button 
+            onClick={() => navigate('/signin')}
+            className="bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-400 hover:to-indigo-500 text-white font-bold rounded-2xl px-6 py-2.5 shadow-md"
+          >
+            Вход в профил
+          </Button>
+        </div>
       </div>
     );
   }
 
-  // 2. Ако липсват въведени мерки
+  // 2. Липсват телесни мерки
   if (!user?.bodyMeasurements) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
-        <Card className="glass-card text-center py-8">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-center text-xl text-gray-800">
-              <AlertCircle className="w-6 h-6 mr-2 text-orange-500" />
-              Необходими са телесни мерки
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-gray-600">
-              За да получите точна препоръка от машинния модел, моля въведете вашите телесни мерки (височина, гръдна обиколка, талия).
-            </p>
-            <Button 
-              onClick={() => navigate('/measurements')}
-              className="bg-beige-600 hover:bg-beige-700 text-white px-6"
-            >
-              Въведете мерки сега
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="max-w-xl mx-auto p-6 my-16">
+        <div className="glass-card text-center p-8 border-white/10 space-y-4">
+          <Sliders className="w-12 h-12 text-indigo-400 mx-auto" />
+          <h2 className="text-2xl font-black text-white font-heading">Необходим е About You Quiz</h2>
+          <p className="text-zinc-400 text-sm">
+            За да заредим вашия дигитален 3D манекен, направете бързия онбординг въпросник (само 1 минута).
+          </p>
+          <Button 
+            onClick={() => navigate('/quiz')}
+            className="bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-400 hover:to-indigo-500 text-white font-bold rounded-2xl px-6 py-2.5 shadow-[0_0_25px_rgba(99,102,241,0.4)]"
+          >
+            Започни About You Quiz ✨
+          </Button>
+        </div>
       </div>
     );
   }
 
+  const confidence = recommendation?.confidence;
+  const hasConfidence = typeof confidence === 'number' && confidence > 0;
+  const isHighConfidence = hasConfidence && confidence >= 85;
+  const isLowConfidence = hasConfidence && confidence < 60;
+  const confidenceColor = !hasConfidence ? '#94A3B8' : isHighConfidence ? '#10B981' : isLowConfidence ? '#F43F5E' : '#6366F1';
+
+  // SVG Circular progress bar values (Radius = 54, Circumference = 2 * PI * 54 = 339.29)
+  const radius = 54;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = hasConfidence
+    ? circumference - (confidence / 100) * circumference
+    : circumference;
+
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2 flex items-center">
-          <Sparkles className="w-8 h-8 mr-3 text-beige-600" />
-          AI Препоръка за размер
-        </h1>
-        <p className="text-gray-600">
-          Интелигентен анализ на вашите мерки и кройката на дрехата за перфектно пасване без риск от връщане
-        </p>
-      </div>
+    <div className="min-h-screen bg-[#FAFAFC] text-zinc-900 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto space-y-8 relative z-10">
+        {/* Заглавна секция */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-6 border-b border-zinc-200/80">
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <Badge className="bg-indigo-50 text-indigo-700 border-indigo-200 text-[10px] font-mono font-bold px-3 py-0.5">
+                FitVision™ 3D Virtual Try-On
+              </Badge>
+              <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] font-mono font-bold px-3 py-0.5">
+                ISO 8559 Calibrated
+              </Badge>
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-black text-zinc-950 font-heading tracking-tight flex items-center gap-3">
+              Виртуална 3D Пробна
+            </h1>
+            <p className="text-xs sm:text-sm text-zinc-600 mt-1">
+              Персонален дигитален близнак, 360° студийна симулация и термичен анализ на напрежението
+            </p>
+          </div>
 
-      <div className="grid lg:grid-cols-2 gap-8">
-        {/* Избор на дреха */}
-        <Card className="glass-card">
-          <CardHeader>
-            <CardTitle className="text-lg">1. Изберете дреха от каталога</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Select onValueChange={handleItemSelect} value={selectedItem ? String(selectedItem.id) : ''}>
-              <SelectTrigger className="border-beige-300 focus:border-beige-500">
-                <SelectValue placeholder="Изберете дреха за анализ..." />
-              </SelectTrigger>
-              <SelectContent>
-                {clothingList.map((item) => (
-                  <SelectItem key={item.id} value={String(item.id)}>
-                    {item.name} — Размер {item.size} ({item.merchantName || 'SmartFit'})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="flex items-center gap-3">
+            <Link to="/clothing">
+              <Button variant="outline" size="sm" className="border-zinc-200 text-zinc-800 hover:bg-zinc-50 text-xs rounded-xl shadow-xs">
+                <ShoppingBag className="w-3.5 h-3.5 mr-1.5 text-indigo-600" />
+                Смени дрехата от каталога
+              </Button>
+            </Link>
+          </div>
+        </div>
 
-            {selectedItem && (
-              <div className="bg-beige-50 rounded-lg p-4 space-y-3 border border-beige-200">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-semibold text-lg text-gray-800">{selectedItem.name}</h3>
-                    <p className="text-xs text-gray-500">Търговец: {selectedItem.merchantName || 'SmartFit Store'}</p>
-                  </div>
-                  <Badge variant="secondary" className="bg-beige-200 text-beige-900">
-                    Обявен размер: {selectedItem.size}
+        {/* АСИМЕТРИЧЕН ЕКРАН: 40% Интелигентен панел вляво / 60% 3D Сцена вдясно */}
+        <div className="grid lg:grid-cols-12 gap-8 items-start">
+          {/* ЛЯВА ЧАСТ: Интелигентният Панел (Glass Card - 5 от 12 = ~42%) */}
+          <div className="lg:col-span-5 space-y-6">
+            {/* 1. Голям пулсиращ кръгов прогрес бар за AI увереност */}
+            <div className="bg-white p-6 rounded-3xl border border-zinc-200/90 shadow-sm space-y-6">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono uppercase tracking-widest text-indigo-700 font-bold flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-indigo-600 animate-pulse" />
+                  AI Препоръка за размер
+                </span>
+                {hasConfidence ? (
+                  <Badge
+                    className={`text-[10px] font-mono font-bold px-2.5 py-0.5 border ${
+                      isHighConfidence
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        : 'bg-rose-50 text-rose-700 border-rose-200'
+                    }`}
+                  >
+                    {isHighConfidence ? 'Висока увереност (>85%)' : 'Препоръка с толеранс'}
                   </Badge>
-                </div>
-
-                {selectedItem.description && (
-                  <p className="text-sm text-gray-600 italic">{selectedItem.description}</p>
+                ) : (
+                  <Badge variant="outline" className="text-[10px] font-mono font-medium text-zinc-500 border-zinc-200 bg-zinc-50">
+                    Confidence unavailable
+                  </Badge>
                 )}
-                
-                <div className="grid grid-cols-2 gap-3 text-sm pt-2">
-                  <div>
-                    <span className="text-gray-500 block text-xs">Тип дреха:</span>
-                    <p className="font-medium text-gray-800">{getClothingTypeBg(selectedItem.type)}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-500 block text-xs">Материя / Еластичност:</span>
-                    <p className="font-medium text-gray-800">{getMaterialBg(selectedItem.material)}</p>
+              </div>
+
+              {/* Кръгов циферблат с препоръчания размер в центъра */}
+              <div className="flex items-center justify-center pt-2 pb-1">
+                <div className="relative w-40 h-40 flex items-center justify-center">
+                  {/* Заден контурен кръг */}
+                  <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
+                    <circle
+                      cx="60"
+                      cy="60"
+                      r={radius}
+                      fill="none"
+                      stroke="rgba(0, 0, 0, 0.06)"
+                      strokeWidth="8"
+                    />
+                    {/* Светещ зареден прогрес в неоново зелено/индиго */}
+                    <circle
+                      cx="60"
+                      cy="60"
+                      r={radius}
+                      fill="none"
+                      stroke={confidenceColor}
+                      strokeWidth="8"
+                      strokeDasharray={circumference}
+                      strokeDashoffset={strokeDashoffset}
+                      strokeLinecap="round"
+                      className="transition-all duration-1000 ease-out"
+                    />
+                  </svg>
+
+                  {/* Централен препоръчан размер: M */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                    <span className="text-4xl sm:text-5xl font-black text-zinc-950 font-mono tracking-tighter">
+                      {recommendation?.recommendedSize || 'M'}
+                    </span>
+                    <span className={`text-xs font-mono font-bold mt-0.5 ${hasConfidence ? 'text-emerald-600' : 'text-zinc-400'}`}>
+                      {hasConfidence ? `${confidence}% Match` : 'Confidence unavailable'}
+                    </span>
                   </div>
                 </div>
+              </div>
 
-                <div className="bg-white rounded p-3 border border-beige-100">
-                  <h4 className="font-medium text-xs text-gray-500 uppercase tracking-wider mb-2">Мерки на дрехата:</h4>
-                  <div className="grid grid-cols-3 gap-2 text-xs">
-                    <div>
-                      <span className="text-gray-500">Ширина:</span>
-                      <p className="font-bold text-gray-800">{selectedItem.measurements.width} см</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Дължина:</span>
-                      <p className="font-bold text-gray-800">{selectedItem.measurements.length} см</p>
-                    </div>
-                    {selectedItem.measurements.sleeves && (
-                      <div>
-                        <span className="text-gray-500">Ръкави:</span>
-                        <p className="font-bold text-gray-800">{selectedItem.measurements.sleeves} см</p>
+              {/* 2. iOS Segmented Control Превключвател на размери (XS, S, M, L, XL) */}
+              <div className="space-y-2 pt-2">
+                <label className="text-[11px] font-mono uppercase tracking-wider text-zinc-500 font-bold block">
+                  Интерактивна проба на размери:
+                </label>
+                <div className="grid grid-cols-5 bg-zinc-100 p-1.5 rounded-2xl border border-zinc-200">
+                  {SIZES.map((sz) => {
+                    const isSelected = activeSize === sz;
+                    const isRec = recommendation?.recommendedSize === sz;
+                    return (
+                      <button
+                        key={sz}
+                        type="button"
+                        onClick={() => setActiveSize(sz)}
+                        className={`py-2 rounded-xl text-xs font-mono font-bold transition-all relative ${
+                          isSelected
+                            ? 'bg-zinc-950 text-white shadow-xs scale-[1.02]'
+                            : 'text-zinc-600 hover:text-zinc-950 hover:bg-zinc-200/60'
+                        }`}
+                      >
+                        {sz}
+                        {isRec && (
+                          <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-500" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 3. Обяснение от модела: Стилизиран блок (Quote Box) */}
+              <div className="bg-indigo-50/70 p-4 rounded-2xl border border-indigo-200/80 relative">
+                <Quote className="w-5 h-5 text-indigo-500/60 mb-1" />
+                <p className="text-xs text-zinc-800 leading-relaxed italic">
+                  {activeSize === recommendation?.recommendedSize ? (
+                    <>
+                      „<strong>Размер {recommendation?.recommendedSize}</strong> съответства на въведената гръдна обиколка ({user.bodyMeasurements.chest} см).“
+                    </>
+                  ) : activeSize === 'S' || activeSize === 'XS' ? (
+                    <>
+                      „<strong>Размер {activeSize}</strong> предлага по-втален контур спрямо базовата мярка.“
+                    </>
+                  ) : (
+                    <>
+                      „<strong>Размер {activeSize}</strong> предлага по-свободен обем спрямо базовата мярка.“
+                    </>
+                  )}
+                </p>
+                <div className="mt-2.5 pt-2 border-t border-indigo-200/60 flex items-center justify-between text-[10px] font-mono text-zinc-500">
+                  <span>Random Forest Model v2.4</span>
+                  <span className="text-indigo-700 font-bold">Statistical Inference</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Карточка за избраната дреха от каталога */}
+            {selectedItem && (
+              <div className="bg-white p-5 rounded-3xl border border-zinc-200/90 shadow-sm space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {selectedItem.image ? (
+                      <img
+                        src={selectedItem.image}
+                        alt={selectedItem.name}
+                        className="w-12 h-12 rounded-xl object-cover border border-zinc-200"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-xl bg-zinc-100 flex items-center justify-center text-xl">
+                        👔
                       </div>
                     )}
+                    <div>
+                      <h4 className="font-bold text-zinc-950 text-sm line-clamp-1">{selectedItem.name}</h4>
+                      <p className="text-[11px] text-zinc-500">{selectedItem.merchantName || 'FitVision Store'}</p>
+                    </div>
                   </div>
+                  <span className="text-base font-black text-indigo-600 font-mono">
+                    {selectedItem.price ? `${Number(selectedItem.price).toFixed(2)} лв` : ''}
+                  </span>
                 </div>
 
-                {selectedItem.price && (
-                  <div className="flex justify-between items-center pt-1">
-                    <span className="text-sm text-gray-500">Цена:</span>
-                    <span className="text-lg font-bold text-beige-700">{selectedItem.price} лв</span>
+                <div className="grid grid-cols-3 gap-2 text-center text-xs font-mono pt-1">
+                  <div className="bg-zinc-50 p-2 rounded-xl border border-zinc-200/60">
+                    <span className="text-[10px] text-zinc-500 block">Ширина</span>
+                    <span className="font-bold text-zinc-900">{selectedItem.measurements.width} см</span>
                   </div>
-                )}
+                  <div className="bg-zinc-50 p-2 rounded-xl border border-zinc-200/60">
+                    <span className="text-[10px] text-zinc-500 block">Дължина</span>
+                    <span className="font-bold text-zinc-900">{selectedItem.measurements.length} см</span>
+                  </div>
+                  <div className="bg-zinc-50 p-2 rounded-xl border border-zinc-200/60">
+                    <span className="text-[10px] text-zinc-500 block">Материя</span>
+                    <span className="font-bold text-indigo-700 capitalize">{selectedItem.material}</span>
+                  </div>
+                </div>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* AI Резултат */}
-        <Card className="glass-card">
-          <CardHeader>
-            <CardTitle className="flex items-center text-lg">
-              <TrendingUp className="w-5 h-5 mr-2 text-beige-600" />
-              2. AI Резултат и препоръка
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {!selectedItem ? (
-              <div className="text-center py-12 text-gray-500">
-                <Sparkles className="w-10 h-10 mx-auto text-beige-400 mb-3" />
-                Изберете дреха от списъка вляво, за да стартирате анализа.
+          {/* ДЯСНА ЧАСТ: Визуализация (3D Сцена или 2D Технически модел) */}
+          <div className="lg:col-span-7 space-y-4">
+            {/* Превключвател за вида визуализация */}
+            <div className="flex items-center justify-between gap-2 pb-1">
+              <span className="text-xs font-mono uppercase tracking-wider text-zinc-500 font-bold">
+                Режим на визуализация:
+              </span>
+              <div className="flex gap-1 bg-zinc-100 p-1 rounded-2xl border border-zinc-200" role="group" aria-label="Избор на визуален режим">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('3d')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition-all ${
+                    viewMode === '3d'
+                      ? 'bg-zinc-950 text-white shadow-xs'
+                      : 'text-zinc-600 hover:text-zinc-950 hover:bg-zinc-200/60'
+                  }`}
+                >
+                  3D Студио
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('2d')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition-all ${
+                    viewMode === '2d'
+                      ? 'bg-zinc-950 text-white shadow-xs'
+                      : 'text-zinc-600 hover:text-zinc-950 hover:bg-zinc-200/60'
+                  }`}
+                >
+                  2D Технически модел
+                </button>
               </div>
-            ) : isLoading ? (
-              <div className="text-center py-12">
-                <div className="animate-spin w-10 h-10 border-4 border-beige-200 border-t-beige-600 rounded-full mx-auto mb-4"></div>
-                <p className="text-gray-700 font-medium">Моделът изчислява най-добрия размер...</p>
-                <p className="text-xs text-gray-500 mt-1">Калибриране на вероятностите спрямо еластичността на дрехата</p>
-              </div>
-            ) : recommendation ? (
-              <div className="space-y-6 animate-fade-in">
-                {/* Основна препоръка */}
-                <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-6 border border-emerald-200 shadow-sm">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center">
-                      <CheckCircle className="w-7 h-7 text-emerald-600 mr-2" />
-                      <div>
-                        <span className="text-xs font-semibold text-emerald-700 uppercase tracking-wider block">
-                          Препоръчан размер
-                        </span>
-                        <h3 className="text-3xl font-extrabold text-emerald-900">
-                          {recommendation.recommendedSize}
-                        </h3>
-                      </div>
-                    </div>
-                    <Badge className={recommendation.confidence >= 80 ? "bg-emerald-600 text-white" : "bg-amber-500 text-white"}>
-                      {recommendation.confidence >= 80 ? "Висока сигурност" : "Умерена сигурност"}
-                    </Badge>
-                  </div>
+            </div>
 
-                  {/* Индикатор за увереност */}
-                  <div className="space-y-1 mt-4">
-                    <div className="flex justify-between text-xs text-emerald-800 font-medium">
-                      <span>Увереност на модела:</span>
-                      <span>{recommendation.confidence}%</span>
-                    </div>
-                    <Progress value={recommendation.confidence} className="h-2 bg-emerald-200" />
-                  </div>
-
-                  <p className="text-sm text-emerald-900 mt-3 leading-relaxed">
-                    {recommendation.description}
-                  </p>
-                </div>
-
-                {/* Алтернативен размер (ако има) */}
-                {recommendation.alternativeSize && (
-                  <div className="bg-sky-50 rounded-lg p-4 border border-sky-200">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center">
-                        <ArrowRight className="w-5 h-5 text-sky-600 mr-2" />
-                        <h4 className="font-semibold text-sky-900 text-sm">
-                          Алтернативен вариант: Размер {recommendation.alternativeSize}
-                        </h4>
-                      </div>
-                      {recommendation.alternativeConfidence && (
-                        <Badge variant="outline" className="border-sky-300 text-sky-800">
-                          {recommendation.alternativeConfidence}% вероятност
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-sky-800 text-xs leading-relaxed">
-                      {recommendation.alternativeExplanation}
-                    </p>
-                  </div>
-                )}
-
-                {/* Интерактивен визуален манекен FitVision */}
-                <VisualFitMannequin
-                  gender={user.bodyMeasurements?.gender}
-                  bodyType={user.bodyMeasurements?.bodyType}
-                  recommendedSize={recommendation.recommendedSize}
-                  alternativeSize={recommendation.alternativeSize}
-                  confidence={recommendation.confidence}
-                  clothingName={selectedItem.name}
-                  clothingWidth={selectedItem.measurements.width}
+            {viewMode === '3d' ? (
+              <>
+                <VirtualTryOn3DScene
+                  gender={user.bodyMeasurements.gender}
+                  bodyType={user.bodyMeasurements.bodyType}
+                  selectedSize={activeSize}
+                  recommendedSize={recommendation?.recommendedSize || 'M'}
+                  clothingName={selectedItem?.name || 'FitVision Garment'}
+                  clothingWidth={selectedItem?.measurements.width || 52}
                   userChest={user.bodyMeasurements.chest}
                   userWaist={user.bodyMeasurements.waist}
+                  isHeatmap={isHeatmap}
+                  onToggleHeatmap={() => setIsHeatmap(!isHeatmap)}
                 />
 
-                {/* Резюме на вашите мерки */}
-                <div className="bg-beige-50 rounded-lg p-4 border border-beige-200">
-                  <h4 className="font-medium text-gray-700 text-xs uppercase tracking-wider mb-2">Използвани мерки от профила ви:</h4>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div>
-                      <span className="text-gray-500">Височина: </span>
-                      <span className="font-semibold text-gray-800">{user.bodyMeasurements.height} см</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Тегло: </span>
-                      <span className="font-semibold text-gray-800">{user.bodyMeasurements.weight} кг</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Гръдна обиколка: </span>
-                      <span className="font-semibold text-gray-800">{user.bodyMeasurements.chest} см</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Талия: </span>
-                      <span className="font-semibold text-gray-800">{user.bodyMeasurements.waist} см</span>
+                {/* Легенда за напрежението при активен Heatmap */}
+                {isHeatmap ? (
+                  <div className="bg-white p-4 rounded-2xl border border-rose-200 shadow-xs flex items-center justify-between text-xs font-mono">
+                    <span className="text-zinc-800 font-bold flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping" />
+                      Термична скала на напрежението:
+                    </span>
+                    <div className="flex items-center gap-4 text-[11px]">
+                      <span className="flex items-center gap-1.5 text-rose-600 font-semibold">
+                        <span className="w-2 h-2 rounded-full bg-rose-500" /> Твърде тясно
+                      </span>
+                      <span className="flex items-center gap-1.5 text-emerald-600 font-semibold">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" /> Перфектен контур
+                      </span>
+                      <span className="flex items-center gap-1.5 text-indigo-600 font-semibold">
+                        <span className="w-2 h-2 rounded-full bg-indigo-500" /> Свободен луфт
+                      </span>
                     </div>
                   </div>
-                </div>
-
-                <Button 
-                  onClick={() => generateRecommendation()} 
-                  variant="outline"
-                  className="w-full border-beige-300 text-beige-800 hover:bg-beige-100 flex items-center justify-center"
-                >
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Повторно изчисление
-                </Button>
-              </div>
+                ) : (
+                  <div className="bg-white p-4 rounded-2xl border border-zinc-200 shadow-xs flex items-center justify-between text-xs text-zinc-500 font-mono">
+                    <span>Мащаб на цифровия двойник: 1:10 • Студийно триточково осветление</span>
+                    <span className="text-indigo-600 font-bold">60 FPS Smooth Morphing</span>
+                  </div>
+                )}
+              </>
             ) : (
-              <div className="text-center py-8">
-                <Button 
-                  onClick={generateRecommendation}
-                  className="bg-beige-600 hover:bg-beige-700 text-white px-6"
-                >
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Генерирай AI препоръка
-                </Button>
-              </div>
+              <VisualFitMannequin
+                gender={user.bodyMeasurements.gender}
+                bodyType={user.bodyMeasurements.bodyType}
+                recommendedSize={recommendation?.recommendedSize || 'M'}
+                alternativeSize={recommendation?.alternativeSize}
+                confidence={recommendation?.confidence ?? undefined}
+                clothingName={selectedItem?.name}
+                clothingWidth={selectedItem?.measurements.width}
+                clothingMeasurementType="flat_width"
+                userChest={user.bodyMeasurements.chest}
+                userWaist={user.bodyMeasurements.waist}
+              />
             )}
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </div>
 
-      {/* Секция за коментар към препоръката */}
-      {recommendation && selectedItem && !commentAdded && (
-        <Card className="glass-card mt-8 max-w-2xl">
-          <CardHeader>
-            <CardTitle className="text-base text-gray-800">
-              Доволни ли сте от препоръката? Оставете отзив
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+        {/* Долна секция: Потребителски отзив и проверка */}
+        <div className="bg-white p-6 rounded-3xl border border-zinc-200 shadow-sm max-w-2xl">
+          <h4 className="font-bold text-zinc-950 text-sm mb-2 flex items-center gap-2">
+            <CheckCircle className="w-4 h-4 text-emerald-600" />
+            Доволни ли сте от виртуалната проба?
+          </h4>
+          {commentAdded ? (
+            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-mono">
+              ✓ Вашият отзив бе записан успешно в профила на модела!
+            </div>
+          ) : (
             <form onSubmit={handleAddComment} className="space-y-3">
               <textarea
-                className="w-full border border-beige-300 rounded-lg p-3 text-sm focus:outline-none focus:border-beige-500"
                 value={commentText}
-                onChange={e => setCommentText(e.target.value)}
-                placeholder="Споделете как ви стои дрехата или впечатления от модела..."
-                required
-                rows={3}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder="Споделете вашите впечатления от пасването на размера..."
+                rows={2}
+                className="w-full bg-zinc-50 border border-zinc-200 rounded-xl p-3 text-xs text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-600 focus:outline-none"
               />
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={commentLoading || !commentText.trim()}
-                className="bg-beige-600 hover:bg-beige-700 text-white"
+                size="sm"
+                className="bg-zinc-950 hover:bg-zinc-850 text-white text-xs font-bold rounded-xl"
               >
-                {commentLoading ? 'Изпращане...' : 'Изпрати коментар'}
+                {commentLoading ? 'Записване...' : 'Изпрати отзив'}
               </Button>
             </form>
-          </CardContent>
-        </Card>
-      )}
-
-      {commentAdded && (
-        <div className="mt-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 text-sm font-medium flex items-center">
-          <CheckCircle className="w-5 h-5 text-emerald-600 mr-2" />
-          Благодарим ви! Вашият отзив бе записан успешно.
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 };

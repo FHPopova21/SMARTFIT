@@ -247,9 +247,18 @@ def predict():
         }
 
         if alt_size and alt_confidence:
+            size_order = ['XXS', 'XS', 'S', 'M', 'L', 'XL', '2XL', 'XXL', '3XL']
+            main_idx = size_order.index(main_size.upper()) if main_size.upper() in size_order else -1
+            alt_idx = size_order.index(alt_size.upper()) if alt_size.upper() in size_order else -1
+
+            if alt_idx != -1 and main_idx != -1 and alt_idx < main_idx:
+                fit_desc = "по-прилепнала / вталена кройка (Slim Fit)"
+            else:
+                fit_desc = "по-свободна кройка (Relaxed Fit)"
+
             response_payload["explanation"] = (
                 f"На база вашите мерки препоръчваме размер {main_size} с {confidence:.1%} увереност. "
-                f"Ако предпочитате по-свободна кройка, размер {alt_size} също е подходящ ({alt_confidence:.1%} вероятност)."
+                f"Ако предпочитате {fit_desc}, размер {alt_size} също е подходящ ({alt_confidence:.1%} вероятност)."
             )
         else:
             response_payload["explanation"] = f"Препоръчваме размер {main_size} с висока увереност ({confidence:.1%})."
@@ -260,7 +269,8 @@ def predict():
         logger.error(f"Prediction failed: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-@clothing_bp.route('/predict-size', methods=['POST'])
+@clothing_bp.route('/predict-size', methods=['POST', 'OPTIONS'])
+@clothing_bp.route('/predict_size', methods=['POST', 'OPTIONS'])
 def predict_size_route():
     """Съвместимост с по-ранната сигнатура на API-то"""
     return predict()

@@ -1,21 +1,22 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuthStore } from '@/store/authStore';
 import { useToast } from '@/hooks/use-toast';
 import { BodyMeasurements } from '@/types';
-import { Save, User, AlertCircle } from 'lucide-react';
+import { Save, User, AlertCircle, Sliders } from 'lucide-react';
 import { measurementsService } from '@/services/measurementsService';
 
 const Measurements = () => {
   const { user, updateUser, isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
   const { toast } = useToast();
-  
+
   const [measurements, setMeasurements] = useState<BodyMeasurements>({
     height: 0,
     weight: 0,
@@ -49,12 +50,12 @@ const Measurements = () => {
 
     try {
       const response = await measurementsService.saveMeasurements(measurements);
-      
+
       // Update the user in the auth store with the new measurements
       if (response.user) {
         updateUser(response.user);
       }
-      
+
       toast({
         title: "Мерките са запазени",
         description: "Вашите телесни мерки са успешно актуализирани!",
@@ -74,8 +75,8 @@ const Measurements = () => {
   const handleInputChange = (field: keyof BodyMeasurements, value: string | number) => {
     setMeasurements(prev => ({
       ...prev,
-      [field]: field === 'age' ? (value === '' ? undefined : Number(value)) : 
-               typeof value === 'string' ? value : Number(value)
+      [field]: field === 'age' ? (value === '' ? undefined : Number(value)) :
+        typeof value === 'string' ? value : Number(value)
     }));
   };
 
@@ -93,9 +94,9 @@ const Measurements = () => {
             <p className="text-gray-600">
               За да въведете и запазите вашите телесни мерки за персонализирани препоръки, моля първо влезте в профила си.
             </p>
-            <Button 
-              onClick={() => navigate('/signin')} 
-              className="bg-beige-600 hover:bg-beige-700 text-white px-6"
+            <Button
+              onClick={() => navigate('/signin')}
+              className="bg-zinc-950 hover:bg-zinc-850 text-white px-6 rounded-xl shadow-xs font-bold"
             >
               Вход в профил
             </Button>
@@ -106,28 +107,32 @@ const Measurements = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2 flex items-center">
-          <User className="w-8 h-8 mr-3 text-beige-600" />
-          Мои телесни мерки
-        </h1>
-        <p className="text-gray-600">
-          Въведете точните си мерки за най-добра AI препоръка за размер
-        </p>
+    <div className="max-w-4xl mx-auto p-6 min-h-screen bg-[#FAFAFC]">
+      <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 rounded-2xl border border-zinc-200 shadow-xs">
+        <div>
+          <Badge className="bg-indigo-50 text-indigo-700 border-indigo-200 text-[10px] mb-1 font-mono font-bold">Интерактивен въпросник</Badge>
+          <h3 className="font-bold text-base text-zinc-950 font-heading">Искате бърз About You Quiz?</h3>
+          <p className="text-xs text-zinc-500">Преминете през въпросника с визуален избор на кройка и 3D дигитален двойник.</p>
+        </div>
+        <Link to="/quiz">
+          <Button className="bg-zinc-950 hover:bg-zinc-850 text-white font-bold text-xs px-5 py-2.5 rounded-xl whitespace-nowrap shadow-xs">
+            <Sliders className="w-3.5 h-3.5 mr-1.5 text-indigo-400" />
+            Отворете About You Quiz
+          </Button>
+        </Link>
       </div>
 
       <form onSubmit={handleSubmit}>
         <div className="grid md:grid-cols-2 gap-6">
           {/* Basic Measurements */}
-          <Card className="glass-card">
+          <Card className="bg-white border border-zinc-200/80 rounded-2xl shadow-xs">
             <CardHeader>
-              <CardTitle>Основни мерки</CardTitle>
+              <CardTitle className="text-zinc-950 text-lg font-heading">Основни мерки</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="height">Височина (см)</Label>
+                  <Label htmlFor="height" className="text-xs font-mono font-bold text-zinc-700">Височина (см)</Label>
                   <Input
                     id="height"
                     type="number"
@@ -137,11 +142,11 @@ const Measurements = () => {
                     min="140"
                     max="220"
                     required
-                    className="border-beige-300 focus:border-beige-500"
+                    className="border-zinc-200 focus:border-indigo-600 rounded-xl"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="weight">Тегло (кг)</Label>
+                  <Label htmlFor="weight" className="text-xs font-mono font-bold text-zinc-700">Тегло (кг)</Label>
                   <Input
                     id="weight"
                     type="number"
@@ -151,15 +156,15 @@ const Measurements = () => {
                     min="40"
                     max="150"
                     required
-                    className="border-beige-300 focus:border-beige-500"
+                    className="border-zinc-200 focus:border-indigo-600 rounded-xl"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="gender">Пол</Label>
+                <Label htmlFor="gender" className="text-xs font-mono font-bold text-zinc-700">Пол</Label>
                 <Select value={measurements.gender} onValueChange={(value: 'male' | 'female') => handleInputChange('gender', value)}>
-                  <SelectTrigger className="border-beige-300 focus:border-beige-500">
+                  <SelectTrigger className="border-zinc-200 focus:border-indigo-600 rounded-xl">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -170,7 +175,7 @@ const Measurements = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="age">Възраст (по желание)</Label>
+                <Label htmlFor="age" className="text-xs font-mono font-bold text-zinc-700">Възраст (по желание)</Label>
                 <Input
                   id="age"
                   type="number"
@@ -179,21 +184,21 @@ const Measurements = () => {
                   placeholder="25"
                   min="16"
                   max="80"
-                  className="border-beige-300 focus:border-beige-500"
+                  className="border-zinc-200 focus:border-indigo-600 rounded-xl"
                 />
               </div>
             </CardContent>
           </Card>
 
           {/* Body Measurements */}
-          <Card className="glass-card">
+          <Card className="bg-white border border-zinc-200/80 rounded-2xl shadow-xs">
             <CardHeader>
-              <CardTitle>Обиколки и телосложение</CardTitle>
+              <CardTitle className="text-zinc-950 text-lg font-heading">Обиколки и телосложение</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="chest">Гръдна обиколка (см)</Label>
+                  <Label htmlFor="chest" className="text-xs font-mono font-bold text-zinc-700">Гръдна обиколка (см)</Label>
                   <Input
                     id="chest"
                     type="number"
@@ -203,11 +208,11 @@ const Measurements = () => {
                     min="70"
                     max="150"
                     required
-                    className="border-beige-300 focus:border-beige-500"
+                    className="border-zinc-200 focus:border-indigo-600 rounded-xl"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="waist">Талия (см)</Label>
+                  <Label htmlFor="waist" className="text-xs font-mono font-bold text-zinc-700">Талия (см)</Label>
                   <Input
                     id="waist"
                     type="number"
@@ -217,15 +222,15 @@ const Measurements = () => {
                     min="60"
                     max="120"
                     required
-                    className="border-beige-300 focus:border-beige-500"
+                    className="border-zinc-200 focus:border-indigo-600 rounded-xl"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="bodyType">Тип телосложение</Label>
+                <Label htmlFor="bodyType" className="text-xs font-mono font-bold text-zinc-700">Тип телосложение</Label>
                 <Select value={measurements.bodyType} onValueChange={(value: 'slim' | 'medium' | 'large') => handleInputChange('bodyType', value)}>
-                  <SelectTrigger className="border-beige-300 focus:border-beige-500">
+                  <SelectTrigger className="border-zinc-200 focus:border-indigo-600 rounded-xl">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -236,13 +241,13 @@ const Measurements = () => {
                 </Select>
               </div>
 
-              <div className="bg-beige-50 p-4 rounded-lg">
-                <h4 className="font-medium text-gray-700 mb-2">Съвети за точни мерки:</h4>
-                <ul className="text-sm text-gray-600 space-y-1">
+              <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-200">
+                <h4 className="font-mono text-xs font-bold text-zinc-950 uppercase tracking-wider mb-2">Съвети за точни мерки:</h4>
+                <ul className="text-xs text-zinc-600 space-y-1">
                   <li>• Измервайте се в по-тесни дрехи</li>
-                  <li>• Гръдната обиколка се мери в най-широката част</li>
+                  <li>• Гръдната обиколка се мери в най-широката част (ISO 8559)</li>
                   <li>• Талията се мери в най-тесната част</li>
-                  <li>• Стойте изправени при измерването</li>
+                  <li>• Стойте изправени в естествена стойка при измерването</li>
                 </ul>
               </div>
             </CardContent>
@@ -250,13 +255,13 @@ const Measurements = () => {
         </div>
 
         <div className="mt-8 flex justify-center">
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             size="lg"
             disabled={isLoading}
-            className="bg-beige-600 hover:bg-beige-700 text-white px-8"
+            className="bg-zinc-950 hover:bg-zinc-850 text-white font-bold px-8 py-3 rounded-2xl shadow-xs"
           >
-            <Save className="w-5 h-5 mr-2" />
+            <Save className="w-5 h-5 mr-2 text-indigo-400" />
             {isLoading ? 'Запазване...' : 'Запази мерките'}
           </Button>
         </div>

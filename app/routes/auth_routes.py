@@ -8,6 +8,7 @@ from app import mail
 from flask_mail import Message
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 import os
+from app.csrf import get_csrf_token, generate_csrf_token, clear_csrf_token
 
 auth_bp = Blueprint('auth_bp', __name__)
 """
@@ -76,11 +77,13 @@ def login():
         user = User.query.filter_by(username=data.get('username')).first()
         if user and user.check_password(data['password']):
             login_user(user)
+            csrf_token = generate_csrf_token()
             log_user_action("user_login", user.id)
             logger.info(f"Successfully logged in user: {user.username}")
             return jsonify({
                 'message': 'Logged in successfully',
-                'user': user.to_dict()
+                'user': user.to_dict(),
+                'csrf_token': csrf_token
             }), 200
         logger.warning(f"Failed login attempt for username: {data.get('username')}")
         return jsonify({'error': 'Invalid username or password'}), 401
@@ -96,11 +99,21 @@ def logout():
     Изход: JSON със статус
     """
     try:
+        clear_csrf_token()
         logout_user()
         return jsonify({'message': 'Logged out successfully'}), 200
     except Exception as e:
         log_error(e, "Logout error")
         return jsonify({'error': str(e)}), 500
+
+@auth_bp.route('/v1/auth/csrf-token', methods=['GET'])
+def get_csrf_token_endpoint():
+    """
+    Returns the active session-bound CSRF token, generating one if not present.
+    Safe endpoint for frontend clients to obtain or refresh CSRF tokens.
+    """
+    token = get_csrf_token()
+    return jsonify({'csrf_token': token}), 200
 
 @auth_bp.route('/forgot-password', methods=['POST'])
 def forgot_password():

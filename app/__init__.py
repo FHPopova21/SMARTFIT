@@ -31,6 +31,8 @@ def create_app(test_config=None):
     )
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'smartfit-dev-secret-key-replace-in-production')
+    app.config['SESSION_COOKIE_HTTPONLY'] = True
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
     # Конфигурация за Flask-Mail
     app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
@@ -53,11 +55,24 @@ def create_app(test_config=None):
     CORS(app, 
          resources={r"/api/*": {"origins": ["http://localhost:8080", "http://localhost:3000", "http://127.0.0.1:8080"]}},
          supports_credentials=True,
-         allow_headers=["Content-Type", "Authorization", "Accept"],
+         allow_headers=["Content-Type", "Authorization", "Accept", "X-CSRFToken", "X-CSRF-Token", "X-Requested-With"],
          methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 
     # Инициализиране на разширенията
     db.init_app(app)
+
+    # Активиране на Foreign Key enforcement за SQLite
+    from sqlalchemy import event
+    from sqlalchemy.engine import Engine
+    import sqlite3
+
+    @event.listens_for(Engine, "connect")
+    def set_sqlite_pragma(dbapi_connection, connection_record):
+        if isinstance(dbapi_connection, sqlite3.Connection):
+            cursor = dbapi_connection.cursor()
+            cursor.execute("PRAGMA foreign_keys=ON")
+            cursor.close()
+
     mail.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
@@ -96,12 +111,18 @@ def create_app(test_config=None):
     from app.routes.admin_routes import admin_bp
     from app.routes.clothing_routes import clothing_bp
     from app.routes.comment_routes import comment_bp
+    from app.routes.store_routes import store_bp
+    from app.routes.product_routes import product_bp
+    from app.routes.storefront_routes import storefront_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api')
     app.register_blueprint(user_bp, url_prefix='/api')
     app.register_blueprint(admin_bp, url_prefix='/api')
     app.register_blueprint(clothing_bp, url_prefix='/api')
     app.register_blueprint(comment_bp, url_prefix='/api')
+    app.register_blueprint(store_bp, url_prefix='/api')
+    app.register_blueprint(product_bp, url_prefix='/api')
+    app.register_blueprint(storefront_bp, url_prefix='/api')
 
     # Root информативен маршрут
     @app.route('/')
@@ -119,5 +140,19 @@ def create_app(test_config=None):
                 'predict': '/api/predict'
             }
         })
+
+    # Explicit developer CLI setup commands (never runs automatically on startup)
+    @app.cli.command('init-db')
+    def init_db_command():
+        """Explicit developer command to create database tables."""
+        db.create_all()
+        print("Database tables created successfully.")
+
+    @app.cli.command('seed-db')
+    def seed_db_command():
+        """Explicit developer command to seed initial development data."""
+        from app.seed import seed_database
+        seed_database()
+        print("Database seeded successfully.")
 
     return app

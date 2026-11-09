@@ -1,3 +1,5 @@
+import { csrfManager } from './csrfManager';
+
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 export interface LoginData {
@@ -33,7 +35,11 @@ export const authService = {
                 credentials: 'include',
                 body: JSON.stringify(data),
             });
-            return handleResponse(response);
+            const result = await handleResponse(response);
+            if (result && result.csrf_token) {
+                csrfManager.setToken(result.csrf_token);
+            }
+            return result;
         } catch (error) {
             console.error('Login error:', error);
             throw error;
@@ -67,7 +73,9 @@ export const authService = {
                 },
                 credentials: 'include',
             });
-            return handleResponse(response);
+            const result = await handleResponse(response);
+            csrfManager.clearToken();
+            return result;
         } catch (error) {
             console.error('Logout error:', error);
             throw error;
@@ -105,4 +113,4 @@ export const authService = {
             throw error;
         }
     },
-}; 
+};

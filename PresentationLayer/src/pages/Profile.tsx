@@ -2,7 +2,19 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuthStore } from '@/store/authStore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, History, Ruler, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  User,
+  History,
+  Ruler,
+  ChevronDown,
+  ChevronUp,
+  Download,
+  Trash2,
+  AlertTriangle,
+  Lock,
+  Sparkles,
+  ShieldCheck
+} from 'lucide-react';
 import { authService } from '@/services/authService';
 import { useToast } from '@/hooks/use-toast';
 import { Link, useNavigate } from 'react-router-dom';
@@ -14,6 +26,7 @@ import {
 } from "@/components/ui/collapsible";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 
 interface RecommendationHistory {
   id: number;
@@ -54,190 +67,205 @@ const Profile = () => {
     const fetchHistory = async () => {
       try {
         const data = await authService.getUserRecommendations();
-        console.log('Fetched recommendations:', data);
         setRecommendationHistory(data);
       } catch (error) {
         console.error('Failed to fetch history:', error);
-        toast({
-          title: "Грешка",
-          description: "Неуспешно зареждане на история на препоръките",
-          variant: "destructive",
-        });
       }
     };
 
     fetchHistory();
-  }, [isAuthenticated, navigate, toast]);
+  }, [isAuthenticated, navigate]);
 
   if (!user) {
     return null;
   }
 
+  const handleExportData = () => {
+    const data = {
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      },
+      anthropometrics: user.bodyMeasurements,
+      history: recommendationHistory,
+      exportDate: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `fitvision-data-${user.name}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: 'GDPR Експортът е готов', description: 'Вашите данни бяха изтеглени като JSON файл.' });
+  };
+
   const renderRecommendationDetails = (recommendation: RecommendationHistory) => (
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-      <div>
-        <label className="text-sm font-medium text-gray-500">Препоръчан размер</label>
-        <p className="text-xl font-bold text-beige-600">{recommendation.recommendedSize}</p>
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 font-mono text-xs">
+      <div className="bg-zinc-50 p-3.5 rounded-xl border border-zinc-200/80">
+        <label className="text-[10px] text-zinc-500 uppercase font-bold block">Препоръчан размер</label>
+        <p className="text-xl font-black text-indigo-600 mt-0.5">{recommendation.recommendedSize}</p>
       </div>
-      <div>
-        <label className="text-sm font-medium text-gray-500">Височина</label>
-        <p>{recommendation.measurements.height} см</p>
+      <div className="bg-zinc-50 p-3.5 rounded-xl border border-zinc-200/80">
+        <label className="text-[10px] text-zinc-500 uppercase font-bold block">Височина</label>
+        <p className="text-zinc-900 font-bold text-sm mt-1">{recommendation.measurements.height} см</p>
       </div>
-      <div>
-        <label className="text-sm font-medium text-gray-500">Тегло</label>
-        <p>{recommendation.measurements.weight} кг</p>
+      <div className="bg-zinc-50 p-3.5 rounded-xl border border-zinc-200/80">
+        <label className="text-[10px] text-zinc-500 uppercase font-bold block">Тегло</label>
+        <p className="text-zinc-900 font-bold text-sm mt-1">{recommendation.measurements.weight} кг</p>
       </div>
-      <div>
-        <label className="text-sm font-medium text-gray-500">Гръдна обиколка</label>
-        <p>{recommendation.measurements.chest} см</p>
+      <div className="bg-zinc-50 p-3.5 rounded-xl border border-zinc-200/80">
+        <label className="text-[10px] text-zinc-500 uppercase font-bold block">Гръдна обиколка</label>
+        <p className="text-zinc-900 font-bold text-sm mt-1">{recommendation.measurements.chest} см</p>
       </div>
-      <div>
-        <label className="text-sm font-medium text-gray-500">Талия</label>
-        <p>{recommendation.measurements.waist} см</p>
+      <div className="bg-zinc-50 p-3.5 rounded-xl border border-zinc-200/80">
+        <label className="text-[10px] text-zinc-500 uppercase font-bold block">Талия</label>
+        <p className="text-zinc-900 font-bold text-sm mt-1">{recommendation.measurements.waist} см</p>
       </div>
-      <div>
-        <label className="text-sm font-medium text-gray-500">Телосложение</label>
-        <p className="capitalize">{recommendation.measurements.bodyType}</p>
+      <div className="bg-zinc-50 p-3.5 rounded-xl border border-zinc-200/80">
+        <label className="text-[10px] text-zinc-500 uppercase font-bold block">Телосложение</label>
+        <p className="text-zinc-900 font-bold text-sm mt-1 uppercase">{recommendation.measurements.bodyType}</p>
       </div>
     </div>
   );
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6 flex items-center">
-        <User className="w-8 h-8 mr-3 text-beige-600" />
-        Моят профил
-      </h1>
-      <Tabs defaultValue="info" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="info">Информация</TabsTrigger>
-          <TabsTrigger value="measurements">Телесни мерки</TabsTrigger>
-          <TabsTrigger value="history">История</TabsTrigger>
-          <TabsTrigger value="password">Смяна на парола</TabsTrigger>
-        </TabsList>
+    <div className="min-h-screen bg-[#FAFAFC] text-zinc-900 py-10 px-4 sm:px-6">
+      <div className="max-w-4xl mx-auto space-y-6">
+        <div className="flex items-center justify-between pb-4 border-b border-zinc-200/80">
+          <h1 className="text-3xl font-black text-zinc-950 font-heading tracking-tight flex items-center">
+            <User className="w-8 h-8 mr-3 text-indigo-600" />
+            Моят FitVision Профил
+          </h1>
+          <Badge className="bg-indigo-50 text-indigo-700 border-indigo-200 text-xs font-mono font-bold px-3 py-1">
+            {user.role === 'seller' ? 'Търговски акаунт' : 'Потребителски профил'}
+          </Badge>
+        </div>
 
-        <TabsContent value="info">
-          <Card>
-            <CardHeader>
-              <CardTitle>Лична информация</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Потребителско име</label>
-                  <p className="text-lg">{user.username}</p>
+        <Tabs defaultValue="info" className="space-y-6">
+          <TabsList className="bg-zinc-100 border border-zinc-200 p-1 rounded-2xl w-full sm:w-auto grid grid-cols-2 sm:inline-flex">
+            <TabsTrigger value="info" className="rounded-xl text-xs font-bold data-[state=active]:bg-white data-[state=active]:text-zinc-950 data-[state=active]:shadow-xs">
+              Информация
+            </TabsTrigger>
+            <TabsTrigger value="measurements" className="rounded-xl text-xs font-bold data-[state=active]:bg-white data-[state=active]:text-zinc-950 data-[state=active]:shadow-xs">
+              Телесни мерки
+            </TabsTrigger>
+            <TabsTrigger value="history" className="rounded-xl text-xs font-bold data-[state=active]:bg-white data-[state=active]:text-zinc-950 data-[state=active]:shadow-xs">
+              История
+            </TabsTrigger>
+            <TabsTrigger value="password" className="rounded-xl text-xs font-bold data-[state=active]:bg-white data-[state=active]:text-zinc-950 data-[state=active]:shadow-xs">
+              Смяна на парола
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="info">
+            <div className="bg-white border border-zinc-200/80 rounded-2xl p-6 shadow-xs space-y-6">
+              <h2 className="text-lg font-bold text-zinc-950 font-heading">Лична информация</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-200/80">
+                  <label className="text-xs font-mono text-zinc-500 block font-bold">Потребителско име</label>
+                  <p className="text-base font-bold text-zinc-950 mt-1">{user.username}</p>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Имейл</label>
-                  <p className="text-lg">{user.email}</p>
+                <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-200/80">
+                  <label className="text-xs font-mono text-zinc-500 block font-bold">Имейл адрес</label>
+                  <p className="text-base font-bold text-zinc-950 mt-1">{user.email || '—'}</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
-        <TabsContent value="measurements">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Ruler className="w-5 h-5 mr-2 text-beige-600" />
-                Телесни мерки
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+              {/* GDPR Експорт */}
+              <div className="pt-4 border-t border-zinc-200/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div>
+                  <h4 className="text-sm font-bold text-zinc-950">Право на преносимост (GDPR Article 20)</h4>
+                  <p className="text-xs text-zinc-500">Изтеглете копие на цялата съхранявана за вас информация като структуриран JSON файл.</p>
+                </div>
+                <Button
+                  onClick={handleExportData}
+                  variant="outline"
+                  size="sm"
+                  className="border-zinc-200 bg-white text-zinc-800 hover:text-zinc-950 hover:bg-zinc-50 text-xs font-bold rounded-xl shadow-xs"
+                >
+                  <Download className="w-3.5 h-3.5 mr-1.5 text-indigo-600" />
+                  Експорт на данни (JSON)
+                </Button>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="measurements">
+            <div className="bg-white border border-zinc-200/80 rounded-2xl p-6 shadow-xs space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-bold text-zinc-950 font-heading flex items-center">
+                  <Ruler className="w-5 h-5 mr-2 text-indigo-600" />
+                  Телесни мерки (ISO 8559-1)
+                </h2>
+                <Link to="/quiz">
+                  <Button size="sm" className="bg-zinc-950 hover:bg-zinc-850 text-white text-xs font-bold rounded-xl shadow-xs">
+                    <Sparkles className="w-3.5 h-3.5 mr-1 text-indigo-400" />
+                    Рекалибрирай чрез Quiz
+                  </Button>
+                </Link>
+              </div>
+
               {user.bodyMeasurements ? (
                 <div className="space-y-6">
-                  {/* Basic Measurements */}
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-700 mb-3">Основни мерки</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      <div>
-                        <label className="text-sm font-medium text-gray-500">Височина</label>
-                        <p className="text-lg">{user.bodyMeasurements.height} см</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-500">Тегло</label>
-                        <p className="text-lg">{user.bodyMeasurements.weight} кг</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-500">Пол</label>
-                        <p className="text-lg capitalize">
-                          {user.bodyMeasurements.gender === 'male' ? 'Мъж' : 'Жена'}
-                        </p>
-                      </div>
-                      {user.bodyMeasurements.age && (
-                        <div>
-                          <label className="text-sm font-medium text-gray-500">Възраст</label>
-                          <p className="text-lg">{user.bodyMeasurements.age} години</p>
-                        </div>
-                      )}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 font-mono text-xs">
+                    <div className="bg-zinc-50 p-3.5 rounded-xl border border-zinc-200/80">
+                      <span className="text-zinc-500 block">Височина:</span>
+                      <p className="text-lg font-black text-zinc-950 mt-0.5">{user.bodyMeasurements.height} см</p>
                     </div>
-                  </div>
-
-                  {/* Body Measurements */}
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-700 mb-3">Обиколки и телосложение</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      <div>
-                        <label className="text-sm font-medium text-gray-500">Гръдна обиколка</label>
-                        <p className="text-lg">{user.bodyMeasurements.chest} см</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-500">Талия</label>
-                        <p className="text-lg">{user.bodyMeasurements.waist} см</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-500">Телосложение</label>
-                        <p className="text-lg capitalize">
-                          {user.bodyMeasurements.bodyType === 'slim' ? 'Слабо' :
-                           user.bodyMeasurements.bodyType === 'medium' ? 'Средно' : 'Едро'}
-                        </p>
-                      </div>
+                    <div className="bg-zinc-50 p-3.5 rounded-xl border border-zinc-200/80">
+                      <span className="text-zinc-500 block">Тегло:</span>
+                      <p className="text-lg font-black text-emerald-600 mt-0.5">{user.bodyMeasurements.weight} кг</p>
                     </div>
-                  </div>
-
-                  <div className="mt-6">
-                    <Link to="/measurements">
-                      <Button variant="outline" className="w-full">
-                        Редактирай мерките
-                      </Button>
-                    </Link>
+                    <div className="bg-zinc-50 p-3.5 rounded-xl border border-zinc-200/80">
+                      <span className="text-zinc-500 block">Гръдна обиколка:</span>
+                      <p className="text-lg font-black text-indigo-600 mt-0.5">{user.bodyMeasurements.chest} см</p>
+                    </div>
+                    <div className="bg-zinc-50 p-3.5 rounded-xl border border-zinc-200/80">
+                      <span className="text-zinc-500 block">Талия:</span>
+                      <p className="text-lg font-black text-zinc-950 mt-0.5">{user.bodyMeasurements.waist} см</p>
+                    </div>
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-6">
-                  <p className="text-gray-600 mb-4">Все още не сте въвели вашите телесни мерки</p>
-                  <Link to="/measurements">
-                    <Button className="bg-beige-600 hover:bg-beige-700">
-                      Въведи мерки
+                <div className="text-center py-8 space-y-3">
+                  <p className="text-zinc-500 text-sm">Все още не сте въвели вашите телесни мерки</p>
+                  <Link to="/quiz">
+                    <Button className="bg-zinc-950 hover:bg-zinc-850 text-white font-bold rounded-xl text-xs shadow-xs">
+                      Стартирай About You Quiz
                     </Button>
                   </Link>
                 </div>
               )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </div>
+          </TabsContent>
 
-        <TabsContent value="history">
-          <div className="space-y-4">
-            {recommendationHistory.length > 0 ? (
-              recommendationHistory.map((recommendation) => (
-                <Collapsible
-                  key={recommendation.id}
-                  open={expandedItems.includes(recommendation.id)}
-                  onOpenChange={() => toggleExpand(recommendation.id)}
-                >
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg flex items-center justify-between">
-                        <span>{recommendation.clothingType}</span>
-                        <div className="flex items-center space-x-4">
-                          <span className="text-sm text-gray-500">
-                            {new Date(recommendation.date).toLocaleDateString('bg-BG')}
+          <TabsContent value="history">
+            <div className="space-y-4">
+              {recommendationHistory.length > 0 ? (
+                recommendationHistory.map((rec) => (
+                  <Collapsible
+                    key={rec.id}
+                    open={expandedItems.includes(rec.id)}
+                    onOpenChange={() => toggleExpand(rec.id)}
+                  >
+                    <div className="bg-white border border-zinc-200/80 rounded-2xl p-5 shadow-xs space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-zinc-950 text-base font-heading">{rec.clothingType}</span>
+                          <Badge className="bg-indigo-50 text-indigo-700 border-indigo-200 text-xs font-mono font-bold">
+                            {rec.recommendedSize}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <span className="text-xs text-zinc-400 font-mono">
+                            {new Date(rec.date).toLocaleDateString('bg-BG')}
                           </span>
                           <CollapsibleTrigger asChild>
-                            <Button variant="ghost" size="sm" className="p-0">
-                              {expandedItems.includes(recommendation.id) ? (
+                            <Button variant="ghost" size="sm" className="text-zinc-500 hover:text-zinc-950 hover:bg-zinc-100 p-1 rounded-lg">
+                              {expandedItems.includes(rec.id) ? (
                                 <ChevronUp className="h-4 w-4" />
                               ) : (
                                 <ChevronDown className="h-4 w-4" />
@@ -245,60 +273,27 @@ const Profile = () => {
                             </Button>
                           </CollapsibleTrigger>
                         </div>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {renderRecommendationDetails(recommendation)}
-                      
-                      <CollapsibleContent>
-                        {recommendation.relatedRecommendations && recommendation.relatedRecommendations.length > 0 && (
-                          <div className="mt-6">
-                            <h4 className="text-md font-medium text-gray-700 mb-4">Предишни препоръки за този артикул</h4>
-                            <div className="space-y-4">
-                              {recommendation.relatedRecommendations.map((related, index) => (
-                                <Card key={related.id} className="bg-gray-50">
-                                  <CardHeader>
-                                    <CardTitle className="text-sm flex justify-between">
-                                      <span>Препоръка #{index + 1}</span>
-                                      <span className="text-gray-500">
-                                        {new Date(related.date).toLocaleDateString('bg-BG')}
-                                      </span>
-                                    </CardTitle>
-                                  </CardHeader>
-                                  <CardContent>
-                                    {renderRecommendationDetails(related)}
-                                  </CardContent>
-                                </Card>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </CollapsibleContent>
-                    </CardContent>
-                  </Card>
-                </Collapsible>
-              ))
-            ) : (
-              <Card>
-                <CardContent className="text-center py-6">
-                  <p className="text-gray-600">Все още нямате история на препоръки</p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </TabsContent>
+                      </div>
+                      {renderRecommendationDetails(rec)}
+                    </div>
+                  </Collapsible>
+                ))
+              ) : (
+                <div className="bg-white border border-zinc-200/80 rounded-2xl text-center py-12 shadow-xs">
+                  <p className="text-zinc-400 text-sm font-medium">Все още нямате запазени предишни препоръки.</p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
 
-        <TabsContent value="password">
-          <Card>
-            <CardHeader>
-              <CardTitle>Смяна на парола</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <TabsContent value="password">
+            <div className="bg-white border border-zinc-200/80 rounded-2xl p-6 shadow-xs space-y-6 max-w-lg">
+              <h2 className="text-lg font-bold text-zinc-950 font-heading">Смяна на парола</h2>
               <ChangePasswordForm />
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 };
@@ -333,7 +328,7 @@ const ChangePasswordForm = () => {
       } else {
         toast({ title: 'Грешка', description: data.error || 'Възникна грешка', variant: 'destructive' });
       }
-    } catch (error) {
+    } catch {
       toast({ title: 'Грешка', description: 'Възникна грешка при връзка със сървъра', variant: 'destructive' });
     } finally {
       setLoading(false);
@@ -341,39 +336,46 @@ const ChangePasswordForm = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
-      <div>
-        <label className="text-sm font-medium text-gray-700">Стара парола</label>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-1.5">
+        <label className="text-xs font-mono text-zinc-700 font-bold">Стара парола</label>
         <Input
           type="password"
           value={oldPassword}
           onChange={e => setOldPassword(e.target.value)}
           required
+          className="bg-white border-zinc-200 text-zinc-900 rounded-xl text-xs h-10 focus:border-indigo-600"
         />
       </div>
-      <div>
-        <label className="text-sm font-medium text-gray-700">Нова парола</label>
+      <div className="space-y-1.5">
+        <label className="text-xs font-mono text-zinc-700 font-bold">Нова парола</label>
         <Input
           type="password"
           value={newPassword}
           onChange={e => setNewPassword(e.target.value)}
           required
+          className="bg-white border-zinc-200 text-zinc-900 rounded-xl text-xs h-10 focus:border-indigo-600"
         />
       </div>
-      <div>
-        <label className="text-sm font-medium text-gray-700">Потвърди нова парола</label>
+      <div className="space-y-1.5">
+        <label className="text-xs font-mono text-zinc-700 font-bold">Потвърди новата парола</label>
         <Input
           type="password"
           value={confirmNewPassword}
           onChange={e => setConfirmNewPassword(e.target.value)}
           required
+          className="bg-white border-zinc-200 text-zinc-900 rounded-xl text-xs h-10 focus:border-indigo-600"
         />
       </div>
-      <Button type="submit" className="w-full bg-beige-600 hover:bg-beige-700 text-white" disabled={loading}>
+      <Button
+        type="submit"
+        className="w-full bg-zinc-950 hover:bg-zinc-850 text-white font-bold text-xs py-2.5 rounded-xl shadow-xs"
+        disabled={loading}
+      >
         {loading ? 'Смяна...' : 'Смени паролата'}
       </Button>
     </form>
   );
 };
 
-export default Profile; 
+export default Profile;
